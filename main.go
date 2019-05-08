@@ -1,6 +1,15 @@
+/* Environment vars:
+User names:                     LEAGUE_ACCS_USER1       LEAGUE_ACCS_USER2
+User passwords:                 LEAGUE_ACCS_USER1_PW    LEAGUE_ACCS_USER2_PW
+CSRF Token (32 Byte):           LEAGUE_ACCS_CSRF
+Template Dir (e.g.: /tmp/*):    LEAGUE_ACCS_TEMPLATE_DIR
+Setting all of them is mandatory for a usable experience.
+*/
+
 package main
 
 import (
+    "os"
     "fmt"
     "log"
     "net/http"
@@ -18,9 +27,11 @@ var u1Token string = ""
 var u2Token string = ""
 
 var users = map[string]User {
-    "felix": {Password: "BALENCIAGAJA69", Token: &u1Token},
-    "erik": {Password: "VVSJA88", Token: &u2Token},
+    os.Getenv("LEAGUE_ACCS_USER1"): {Password: os.Getenv("LEAGUE_ACCS_USER1_PW"), Token: &u1Token},
+    os.Getenv("LEAGUE_ACCS_USER2"): {Password: os.Getenv("LEAGUE_ACCS_USER2_PW"), Token: &u2Token},
 }
+
+var templates = template.Must(template.ParseGlob(os.Getenv("LEAGUE_ACCS_TEMPLATE_DIR")))
 
 type LoginPage struct {
     Username string
@@ -43,13 +54,7 @@ func accounts(w http.ResponseWriter, r *http.Request) {
         return
     }
     data := AccountsPage{Username: username}
-    template, err := template.ParseFiles("template/accounts.html")
-    if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-        fmt.Fprintln(w, "Internal Server Error")
-        return
-    }
-    template.Execute(w, data)
+    templates.ExecuteTemplate(w, "accounts.html", data)
 }
 
 func checkAuth(w http.ResponseWriter, r *http.Request) (string, error) {
@@ -78,15 +83,8 @@ func checkAuth(w http.ResponseWriter, r *http.Request) (string, error) {
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
-    template, err := template.ParseFiles("template/login.html")
-    if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-        fmt.Fprintln(w, "Internal Server Error")
-        return
-    }
-
     if r.Method != http.MethodPost {
-        template.Execute(w, nil)
+        templates.ExecuteTemplate(w, "login.html", nil)
         return
     }
 
@@ -102,7 +100,7 @@ func login(w http.ResponseWriter, r *http.Request) {
     }
 
     randBytes := make([]byte, 24)
-    _, err = rand.Read(randBytes)
+    _, err := rand.Read(randBytes)
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         fmt.Fprintln(w, "Internal Server Error")
