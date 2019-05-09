@@ -1,11 +1,3 @@
-/* Environment vars:
-User names:                     LEAGUE_ACCS_USER1       LEAGUE_ACCS_USER2
-User passwords:                 LEAGUE_ACCS_USER1_PW    LEAGUE_ACCS_USER2_PW
-CSRF Token (32 Byte):           LEAGUE_ACCS_CSRF
-Template Dir (e.g.: /tmp/*):    LEAGUE_ACCS_TEMPLATE_DIR
-Setting all of them is mandatory for a usable experience.
-*/
-
 package main
 
 import (
