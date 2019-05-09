@@ -10,12 +10,14 @@ package main
 
 import (
     "os"
+    "io/ioutil"
     "fmt"
     "log"
     "net/http"
     "html/template"
     "crypto/rand"
     "encoding/base64"
+    "encoding/json"
 )
 
 type User struct {
@@ -33,28 +35,71 @@ var users = map[string]User {
 
 var templates = template.Must(template.ParseGlob(os.Getenv("LEAGUE_ACCS_TEMPLATE_DIR")))
 
+var accountsJsonFile = os.Getenv("LEAGUE_ACCS_JSON")
+
 type LoginPage struct {
     Username string
     Password string
 }
 
-type AccountsPage struct {
-    Username string
+type AccountsPage []struct {
+    Region              string      `json:"region"`
+    Tags                []string    `json:"tags"`
+    Ign                 string      `json:"ign"`
+    Username            string      `json:"username"`
+    Password            string      `json:"password"`
+    User                string      `json:"user"`
+    Leaverbuster        string      `json:"leaverbuster"`
+    Ban                 string      `json:"ban"`
+    Ban_recently        string      `json:"ban_recently"`
+    Owner_active        bool        `json:"owner_active"`
+    Password_changed    bool        `json:"password_changed"`
+    Pre_30              bool        `json:"pre_3p"`
+    Elo                 string      `json:"elo"`
 }
 
 func main() {
+    accountsJsonFileStat, err := os.Stat(accountsJsonFile)
+    log.Println("Using", accountsJsonFile)
+    if err != nil {
+        log.Fatal("ERROR: Error loading Json file. LEAGUE_ACCS_JSON set correctly?")
+    }
+    if accountsJsonFileStat.Mode().IsRegular() == false {
+        log.Fatal("ERROR: LEAGUE_ACCS_JSON is not a regular file!")
+    }
+
     http.HandleFunc("/login", login)
     http.HandleFunc("/", accounts)
     log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
 func accounts(w http.ResponseWriter, r *http.Request) {
-    username, err := checkAuth(w, r)
+    current_username, err := checkAuth(w, r)
     if err != nil {
         return
     }
-    data := AccountsPage{Username: username}
-    templates.ExecuteTemplate(w, "accounts.html", data)
+
+    accountsFile, err := os.Open(accountsJsonFile)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintln(w, "Internal Server Error")
+        return
+    }
+    defer accountsFile.Close()
+
+    accountsContent, err := ioutil.ReadAll(accountsFile)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintln(w, "Internal Server Error")
+        return
+    }
+
+    var accountsParsed AccountsPage
+    json.Unmarshal(accountsContent, &accountsParsed)
+    log.Println(current_username)
+    log.Println(accountsParsed)
+
+    templates.ExecuteTemplate(w, "accounts.html", nil)
 }
 
 func checkAuth(w http.ResponseWriter, r *http.Request) (string, error) {
