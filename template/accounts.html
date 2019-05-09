@@ -1,1 +1,116 @@
-<h1>Hello {{.Username}}</h1>
+<html>
+    <head>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+        <title>League Accounts</title>
+    </head>
+    <body class="py-4">
+        <div class="container">
+            <nav class="mb-5 navbar navbar-light bg-light">
+                <a class="navbar-brand" href="/">League Accounts</a>
+                <a href="/accs/new" class="badge badge-success">+Add</a>
+            </nav>
+            <table class="table table-responsive">
+                <thead>
+                    <tr>
+                      <th scope="col"></th>
+                      <th scope="col">Region</th>
+                      <th scope="col">Tags</th>
+                      <th scope="col">Username</th>
+                      <th scope="col">IGN</th>
+                      <th scope="col">Password</th>
+                      <th scope="col">User</th>
+                      <th scope="col">Elo</th>
+                    </tr>
+                  </thead>
+                <tbody>
+                {{ range .Accounts }}
+                    {{ if and (eq .Password_changed false) (eq .Banned false) }}
+                    <tr>
+                        <td><a href="/accs/{{ .Id }}">✏ </a></td>
+                        <td>{{ .Region }}</td>
+                        <td>{{ range .Tags }}<span class="badge badge-primary">{{ . }}</span>{{ end }}{{ if .Leaverbuster }}<span class="badge badge-warning">{{ .Leaverbuster }} min</span>{{ end }}{{ if .Pre_30 }}<span class="badge badge-info">Pre 30</span>{{ end }}{{ if .Ban }}<span class="badge badge-danger">!</span>{{ end }}</td>
+                        <td><a href="{{ .Link }}">{{ .Ign }}</a></td>
+                        <td>{{ .Username }}</td>
+                        <td>{{ .Password }}</td>
+                        <td>{{ .User }}</td>
+                        <td>{{ .Elo }}</td>
+                    </tr>
+                    {{ end }}
+                {{ end }}
+                </tbody>
+            </table>
+            <h2 class="mt-5">Currently banned</h2>
+            <table class="table table-responsive">
+                <thead>
+                    <tr>
+                      <th scope="col"></th>
+                      <th scope="col">Region</th>
+                      <th scope="col">Tags</th>
+                      <th scope="col">Username</th>
+                      <th scope="col">IGN</th>
+                      <th scope="col">Password</th>
+                      <th scope="col">User</th>
+                      <th scope="col">Ban</th>
+                      <th scope="col">Elo</th>
+                    </tr>
+                  </thead>
+                <tbody>
+                {{ range .Accounts }}
+                    {{ if and (ne .Banned false) (ne .Ban "permanent") }}
+                    <tr>
+                        <td><a href="/accs/{{ .Id }}">✏ </a></td>
+                        <td>{{ .Region }}</td>
+                        <td>{{ range .Tags }}<span class="badge badge-primary">{{ . }}</span>{{ end }}{{ if .Leaverbuster }}<span class="badge badge-warning">{{ .Leaverbuster }} min</span>{{ end }}{{ if .Pre_30 }}<span class="badge badge-info">Pre 30</span>{{ end }}</td>
+                        <td><a href="{{ .Link }}">{{ .Ign }}</a></td>
+                        <td>{{ .Username }}</td>
+                        <td>{{ .Password }}</td>
+                        <td>{{ .User }}</td>
+                        <td>{{ .Ban }}</td>
+                        <td>{{ .Elo }}</td>
+                    </tr>
+                    {{ end }}
+                {{ end }}
+                </tbody>
+            </table>
+            <h2 class="mt-5">Gone</h2>
+            <table class="table table-responsive">
+                <thead>
+                    <tr>
+                      <th scope="col"></th>
+                      <th scope="col">Region</th>
+                      <th scope="col">Tags</th>
+                      <th scope="col">Username</th>
+                      <th scope="col">IGN</th>
+                      <th scope="col">Password</th>
+                      <th scope="col">User</th>
+                      <th scope="col">Ban</th>
+                      <th scope="col">Password changed</th>
+                      <th scope="col">Elo</th>
+                    </tr>
+                  </thead>
+                <tbody>
+                {{ range .Accounts }}
+                    {{ if or (ne .Password_changed false) (eq .Ban "permanent") }}
+                    <tr>
+                        <td><a href="/accs/{{ .Id }}">✏ </a></td>
+                        <td>{{ .Region }}</td>
+                        <td>{{ range .Tags }}<span class="badge badge-primary">{{ . }}</span>{{ end }}{{ if .Leaverbuster }}<span class="badge badge-warning">{{ .Leaverbuster }} min</span>{{ end }}{{ if .Pre_30 }}<span class="badge badge-info">Pre 30</span>{{ end }}</td>
+                        <td><a href="{{ .Link }}">{{ .Ign }}</a></td>
+                        <td>{{ .Username }}</td>
+                        <td>{{ .Password }}</td>
+                        <td>{{ .User }}</td>
+                        <td>{{ .Ban }}</td>
+                        <td>{{ if .Password_changed }}Yes{{ end }}</td>
+                        <td>{{ .Elo }}</td>
+                    </tr>
+                    {{ end }}
+                {{ end }}
+                </tbody>
+            </table>
+            <p class="mt-5">Logged in as {{ .Username }}. <a href="/login">Relog</a></p>
+        </div>
+    </body>
+</html>
