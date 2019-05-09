@@ -2,6 +2,7 @@ package main
 
 import (
     "os"
+    "time"
     "io/ioutil"
     "fmt"
     "log"
@@ -13,8 +14,8 @@ import (
 )
 
 type User struct {
-    Password string
-    Token *string
+    Password    string
+    Token       *string
 }
 
 var u1Token string = ""
@@ -34,19 +35,25 @@ type LoginPage struct {
     Password string
 }
 
-type AccountsPage []struct {
+type AccountsPage struct {
+    Username    string
+    Accounts    AccountsTable
+}
+
+type AccountsTable []struct {
+    Id                  int         `json:"id"`
     Region              string      `json:"region"`
     Tags                []string    `json:"tags"`
     Ign                 string      `json:"ign"`
     Username            string      `json:"username"`
     Password            string      `json:"password"`
     User                string      `json:"user"`
-    Leaverbuster        string      `json:"leaverbuster"`
+    Leaverbuster        int         `json:"leaverbuster"`
     Ban                 string      `json:"ban"`
-    Ban_recently        string      `json:"ban_recently"`
-    Owner_active        bool        `json:"owner_active"`
+    Banned              bool
     Password_changed    bool        `json:"password_changed"`
-    Pre_30              bool        `json:"pre_3p"`
+    Pre_30              bool        `json:"pre_30"`
+    Link                string
     Elo                 string      `json:"elo"`
 }
 
@@ -86,12 +93,33 @@ func accounts(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    var accountsParsed AccountsPage
+    var accountsParsed AccountsTable
     json.Unmarshal(accountsContent, &accountsParsed)
-    log.Println(current_username)
-    log.Println(accountsParsed)
 
-    templates.ExecuteTemplate(w, "accounts.html", nil)
+    for i, account := range accountsParsed {
+        accountsParsed[i].Link = fmt.Sprintf("https://www.leagueofgraphs.com/de/summoner/%s/%s", account.Region, account.Ign)
+
+        accountsParsed[i].Elo = "Not implemented"
+
+        if account.Ban == "permanent" {
+            accountsParsed[i].Banned = true
+            continue
+        }
+        if account.Ban != "" {
+            ban, err := time.Parse(time.RFC3339, account.Ban)
+            if err != nil {
+                log.Println("ERROR: Couldn't parse date:", account.Ban)
+                continue
+            }
+            if ban.Unix() - time.Now().Unix() > 0 {
+                accountsParsed[i].Banned = true
+            }
+        }
+    }
+
+    data := AccountsPage{Username: current_username, Accounts: accountsParsed}
+
+    templates.ExecuteTemplate(w, "accounts.html", data)
 }
 
 func checkAuth(w http.ResponseWriter, r *http.Request) (string, error) {
