@@ -5,12 +5,14 @@ import (
     "time"
     "io/ioutil"
     "fmt"
+    "strconv"
     "log"
     "net/http"
     "html/template"
     "crypto/rand"
     "encoding/base64"
     "encoding/json"
+    "github.com/gorilla/mux"
 )
 
 type User struct {
@@ -21,9 +23,11 @@ type User struct {
 var u1Token string = ""
 var u2Token string = ""
 
+var loginUsernames = []string { os.Getenv("LEAGUE_ACCS_USER1"), os.Getenv("LEAGUE_ACCS_USER2"), }
+
 var users = map[string]User {
-    os.Getenv("LEAGUE_ACCS_USER1"): {Password: os.Getenv("LEAGUE_ACCS_USER1_PW"), Token: &u1Token},
-    os.Getenv("LEAGUE_ACCS_USER2"): {Password: os.Getenv("LEAGUE_ACCS_USER2_PW"), Token: &u2Token},
+    loginUsernames[0]: {Password: os.Getenv("LEAGUE_ACCS_USER1_PW"), Token: &u1Token},
+    loginUsernames[1]: {Password: os.Getenv("LEAGUE_ACCS_USER2_PW"), Token: &u2Token},
 }
 
 var templates = template.Must(template.ParseGlob(os.Getenv("LEAGUE_ACCS_TEMPLATE_DIR")))
@@ -43,11 +47,12 @@ type AccountsPage struct {
 type AccountsTable []struct {
     Id                  int         `json:"id"`
     Region              string      `json:"region"`
-    Tags                []string    `json:"tags"`
+    Tag                 string    `json:"tag"`
     Ign                 string      `json:"ign"`
     Username            string      `json:"username"`
     Password            string      `json:"password"`
     User                string      `json:"user"`
+    Users               []string
     Leaverbuster        int         `json:"leaverbuster"`
     Ban                 string      `json:"ban"`
     Banned              bool
@@ -55,6 +60,30 @@ type AccountsTable []struct {
     Pre_30              bool        `json:"pre_30"`
     Link                string
     Elo                 string      `json:"elo"`
+}
+
+
+type EditPage struct {
+    Username    string
+    Account     EditTable
+}
+
+type EditTable struct {
+    Id                  int
+    Region              string
+    Tag                 string
+    Ign                 string
+    Username            string
+    Password            string
+    User                string
+    Users               []string
+    Leaverbuster        int
+    Ban                 string
+    Banned              bool
+    Password_changed    bool
+    Pre_30              bool
+    Link                string
+    Elo                 string
 }
 
 func main() {
@@ -67,16 +96,19 @@ func main() {
         log.Fatal("ERROR: LEAGUE_ACCS_JSON is not a regular file!")
     }
 
-    http.HandleFunc("/login", login)
-    http.HandleFunc("/", accounts)
-    log.Fatal(http.ListenAndServe(":8080", nil))
+    router := mux.NewRouter()
+    router.HandleFunc("/login", login)
+    router.HandleFunc("/", accounts)
+    router.HandleFunc("/edit/{id:[0-9]+}", edit)
+    log.Fatal(http.ListenAndServe(":8080", router))
 }
 
 func accounts(w http.ResponseWriter, r *http.Request) {
-    current_username, err := checkAuth(w, r)
-    if err != nil {
-        return
-    }
+    // currentUsername, err := checkAuth(w, r)
+    // if err != nil {
+    //     return
+    // }
+    currentUsername := "erik"
 
     accountsFile, err := os.Open(accountsJsonFile)
     if err != nil {
@@ -117,9 +149,58 @@ func accounts(w http.ResponseWriter, r *http.Request) {
         }
     }
 
-    data := AccountsPage{Username: current_username, Accounts: accountsParsed}
+    data := AccountsPage{Username: currentUsername, Accounts: accountsParsed}
 
     templates.ExecuteTemplate(w, "accounts.html", data)
+}
+
+func edit(w http.ResponseWriter, r *http.Request) {
+    // currentUsername, err := checkAuth(w, r)
+    // if err != nil {
+    //     return
+    // }
+    if r.Method != http.MethodGet {
+        http.Redirect(w, r, "/", http.StatusSeeOther)
+        return
+    }
+
+    accountsFile, err := os.Open(accountsJsonFile)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintln(w, "Internal Server Error")
+        return
+    }
+    defer accountsFile.Close()
+
+    accountsContent, err := ioutil.ReadAll(accountsFile)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintln(w, "Internal Server Error")
+        return
+    }
+
+    var accountsParsed AccountsTable
+    json.Unmarshal(accountsContent, &accountsParsed)
+
+    urlVars := mux.Vars(r)
+    id, err := strconv.Atoi(urlVars["id"])
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintln(w, "Internal Server Error")
+        return
+    }
+    if id > len(accountsParsed) - 1 {
+        w.WriteHeader(http.StatusBadRequest)
+        fmt.Fprintln(w, "Bad Request")
+        return
+    }
+
+    currentAccount := EditTable(accountsParsed[id])
+    currentAccount.Users = loginUsernames
+    currentUsername := "erik"
+    data := EditPage{Username: currentUsername, Account: currentAccount}
+
+    templates.ExecuteTemplate(w, "edit.html", data)
 }
 
 func checkAuth(w http.ResponseWriter, r *http.Request) (string, error) {
@@ -180,5 +261,5 @@ func login(w http.ResponseWriter, r *http.Request) {
         Name:    "session_token",
         Value:   sessionToken,
     })
-    http.Redirect(w, r, "/accs", http.StatusSeeOther)
+    http.Redirect(w, r, "/", http.StatusSeeOther)
 }
