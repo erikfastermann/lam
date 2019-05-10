@@ -15,11 +15,9 @@ Setting all of them is mandatory for a usable experience.
 ```
 [
   {
+    "id": 0,
     "region": "euw",
-    "tags": [ 
-        "Awesome",
-        "Cool"
-    ],
+    "tag": "awesome"
     "ign": "in-game-name",
     "username": "username",
     "password": "12345678",
@@ -31,8 +29,9 @@ Setting all of them is mandatory for a usable experience.
     "elo": ""
   },
   {
+    "id": 1,
     "region": "ru",
-    "tags": [],
+    "tag": "",
     "ign": "something",
     "username": "something",
     "password": "abcdef123",
