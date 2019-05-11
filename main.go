@@ -39,51 +39,31 @@ type LoginPage struct {
     Password string
 }
 
-type AccountsPage struct {
-    Username    string
-    Accounts    AccountsTable
-}
-
-type AccountsTable []struct {
+type AccountJson struct {
     Id                  int         `json:"id"`
     Region              string      `json:"region"`
-    Tag                 string    `json:"tag"`
+    Tag                 string      `json:"tag"`
     Ign                 string      `json:"ign"`
     Username            string      `json:"username"`
     Password            string      `json:"password"`
     User                string      `json:"user"`
-    Users               []string
     Leaverbuster        int         `json:"leaverbuster"`
     Ban                 string      `json:"ban"`
-    Banned              bool
     Password_changed    bool        `json:"password_changed"`
     Pre_30              bool        `json:"pre_30"`
-    Link                string
-    Elo                 string      `json:"elo"`
 }
 
+type AccountData struct {
+    Banned  bool
+    Link    string
+    Elo     string
+    Account AccountJson
+}
 
-type EditPage struct {
+type AccountsPage struct {
+    Users       []string
     Username    string
-    Account     EditTable
-}
-
-type EditTable struct {
-    Id                  int
-    Region              string
-    Tag                 string
-    Ign                 string
-    Username            string
-    Password            string
-    User                string
-    Users               []string
-    Leaverbuster        int
-    Ban                 string
-    Banned              bool
-    Password_changed    bool
-    Pre_30              bool
-    Link                string
-    Elo                 string
+    Accounts    []AccountData
 }
 
 func main() {
@@ -103,51 +83,62 @@ func main() {
     log.Fatal(http.ListenAndServe(":8080", router))
 }
 
-func accounts(w http.ResponseWriter, r *http.Request) {
-    // currentUsername, err := checkAuth(w, r)
-    // if err != nil {
-    //     return
-    // }
-    currentUsername := "erik"
-
+func parseAccountsJsonFile() ([]AccountData, error) {
     accountsFile, err := os.Open(accountsJsonFile)
     if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-        fmt.Fprintln(w, "Internal Server Error")
-        return
+        return nil, err
     }
     defer accountsFile.Close()
 
     accountsContent, err := ioutil.ReadAll(accountsFile)
     if err != nil {
+        return nil, err
+    }
+
+    var accountsParsed []AccountJson
+    json.Unmarshal(accountsContent, &accountsParsed)
+
+    var accountsComputed []AccountData
+    var link, elo string
+    banned := false
+
+    for _, account := range accountsParsed {
+        link = fmt.Sprintf("https://www.leagueofgraphs.com/de/summoner/%s/%s", account.Region, account.Ign)
+
+        elo = "Not implemented"
+
+        if account.Ban == "permanent" {
+            banned = true
+        } else if account.Ban != "" {
+            ban, err := time.Parse(time.RFC3339, account.Ban)
+            if err != nil {
+                log.Println("ERROR: Couldn't parse date:", account.Ban)
+                banned = false
+            } else if ban.Unix() - time.Now().Unix() > 0 {
+                banned = true
+            }
+        } else {
+            banned = false
+        }
+
+        accountsComputed = append(accountsComputed, AccountData{Banned: banned, Link: link, Elo: elo, Account: account})
+    }
+    return accountsComputed, nil
+}
+
+func accounts(w http.ResponseWriter, r *http.Request) {
+    currentUsername, err := checkAuth(w, r)
+    if err != nil {
+        return
+    }
+
+    accountsParsed, err := parseAccountsJsonFile()
+    if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         fmt.Fprintln(w, "Internal Server Error")
         return
     }
 
-    var accountsParsed AccountsTable
-    json.Unmarshal(accountsContent, &accountsParsed)
-
-    for i, account := range accountsParsed {
-        accountsParsed[i].Link = fmt.Sprintf("https://www.leagueofgraphs.com/de/summoner/%s/%s", account.Region, account.Ign)
-
-        accountsParsed[i].Elo = "Not implemented"
-
-        if account.Ban == "permanent" {
-            accountsParsed[i].Banned = true
-            continue
-        }
-        if account.Ban != "" {
-            ban, err := time.Parse(time.RFC3339, account.Ban)
-            if err != nil {
-                log.Println("ERROR: Couldn't parse date:", account.Ban)
-                continue
-            }
-            if ban.Unix() - time.Now().Unix() > 0 {
-                accountsParsed[i].Banned = true
-            }
-        }
-    }
 
     data := AccountsPage{Username: currentUsername, Accounts: accountsParsed}
 
@@ -155,10 +146,13 @@ func accounts(w http.ResponseWriter, r *http.Request) {
 }
 
 func edit(w http.ResponseWriter, r *http.Request) {
+    return
     // currentUsername, err := checkAuth(w, r)
-    // if err != nil {
-    //     return
-    // }
+    _, err := checkAuth(w, r)
+    if err != nil {
+        return
+    }
+
     if r.Method == http.MethodPost {
         fmt.Println(r.FormValue("region"))
         fmt.Println(r.FormValue("tag"))
@@ -175,23 +169,12 @@ func edit(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    accountsFile, err := os.Open(accountsJsonFile)
+    accountsParsed, err := parseAccountsJsonFile()
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         fmt.Fprintln(w, "Internal Server Error")
         return
     }
-    defer accountsFile.Close()
-
-    accountsContent, err := ioutil.ReadAll(accountsFile)
-    if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-        fmt.Fprintln(w, "Internal Server Error")
-        return
-    }
-
-    var accountsParsed AccountsTable
-    json.Unmarshal(accountsContent, &accountsParsed)
 
     urlVars := mux.Vars(r)
     id, err := strconv.Atoi(urlVars["id"])
@@ -206,15 +189,15 @@ func edit(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    currentAccount := EditTable(accountsParsed[id])
-    currentAccount.Users = loginUsernames
-    currentUsername := "erik"
-    data := EditPage{Username: currentUsername, Account: currentAccount}
+    // currentAccount := EditTable(accountsParsed[id])
+    // currentAccount.Users = loginUsernames
+    // data := EditPage{Username: currentUsername, Account: currentAccount}
 
-    templates.ExecuteTemplate(w, "edit.html", data)
+    // templates.ExecuteTemplate(w, "edit.html", data)
 }
 
 func checkAuth(w http.ResponseWriter, r *http.Request) (string, error) {
+    // return "testuser", nil
     c, err := r.Cookie("session_token")
     if err != nil {
         if err == http.ErrNoCookie {
