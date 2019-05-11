@@ -159,7 +159,18 @@ func edit(w http.ResponseWriter, r *http.Request) {
     // if err != nil {
     //     return
     // }
-    if r.Method != http.MethodGet {
+    if r.Method == http.MethodPost {
+        fmt.Println(r.FormValue("region"))
+        fmt.Println(r.FormValue("tag"))
+        fmt.Println(r.FormValue("ign"))
+        fmt.Println(r.FormValue("username"))
+        fmt.Println(r.FormValue("password"))
+        fmt.Println(r.FormValue("user"))
+        fmt.Println(r.FormValue("leaverbuster"))
+        fmt.Println(r.FormValue("ban"))
+        fmt.Println(r.FormValue("password_changed"))
+        fmt.Println(r.FormValue("pre_30"))
+
         http.Redirect(w, r, "/", http.StatusSeeOther)
         return
     }

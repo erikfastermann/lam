@@ -17,7 +17,7 @@
         <form method="POST">
   <div class="form-group">
     <label for="sel_region">Region</label>
-    <select class="form-control" id="sel_region">
+    <select name="region" class="form-control" id="sel_region">
       <option {{ if (eq .Region "br") }}selected{{ end }}>br</option>
       <option {{ if (eq .Region "eune") }}selected{{ end }}>eune</option>
       <option {{ if (eq .Region "euw") }}selected{{ end }}>euw</option>
@@ -36,23 +36,23 @@
   </div>
             <div class="form-group">
     <label for="tb_tag">Tag</label>
-    <input type="text" class="form-control" id="tb_tag" value="{{ .Tag }}">
+    <input name="tag" type="text" class="form-control" id="tb_tag" value="{{ .Tag }}">
   </div>
             <div class="form-group">
     <label for="tb_ign">IGN</label>
-    <input type="text" class="form-control" id="tb_ign" value="{{ .Ign }}">
+    <input name="ign" type="text" class="form-control" id="tb_ign" value="{{ .Ign }}">
   </div>
             <div class="form-group">
     <label for="tb_username">Username</label>
-    <input type="text" class="form-control" id="tb_username" value="{{ .Username }}">
+    <input name="username" type="text" class="form-control" id="tb_username" value="{{ .Username }}">
   </div>
             <div class="form-group">
     <label for="tb_password">Password</label>
-    <input type="password" class="form-control" id="tb_password" value="{{ .Password }}">
+    <input name="password" type="password" class="form-control" id="tb_password" value="{{ .Password }}">
   </div>
   <div class="form-group">
     <label for="sel_user">User</label>
-    <select class="form-control" id="sel_region">
+    <select name="user" class="form-control" id="sel_region">
         {{ $currentUser := .User }}{{ range .Users }}
         <option {{ if (eq $currentUser .)}}selected{{ end }}>{{ . }}</option>
       {{ end }}
@@ -60,7 +60,7 @@
   </div>
   <div class="form-group">
     <label for="sel_leaverbuster">Leaverbuster</label>
-    <select class="form-control" id="sel_leaverbuster">
+    <select name="leaverbuster" class="form-control" id="sel_leaverbuster">
         <option {{ if (eq .Leaverbuster 0) }}selected{{ end }}>0</option>
         <option {{ if (eq .Leaverbuster 5) }}selected{{ end }}>5</option>
         <option {{ if (eq .Leaverbuster 20) }}selected{{ end }}>20</option>
@@ -68,14 +68,14 @@
   </div>
             <div class="form-group">
     <label for="tb_ban">Ban (e.g.: 2019-05-10T15:48:00+02:00</label>
-    <input type="text" class="form-control" id="tb_ban" value="{{ .Ban }}">
+    <input name="ban" type="text" class="form-control" id="tb_ban" value="{{ .Ban }}">
   </div>
             <div class="custom-control custom-checkbox">
-                <input class="custom-control-input" type="checkbox" value="" id="chk_password_changed" {{ if .Password_changed }}checked{{ end }}>
+                <input name="password_changed" class="custom-control-input" type="checkbox" value="true" id="chk_password_changed" {{ if .Password_changed }}checked{{ end }}>
                 <label class="custom-control-label" for="chk_password_changed">Password changed</label>
             </div>
             <div class="custom-control custom-checkbox">
-                <input type="checkbox" class="custom-control-input" id="chk_pre_30" {{ if .Pre_30 }}checked{{ end }}>
+                <input name="pre_30" type="checkbox" class="custom-control-input" value="true" id="chk_pre_30" {{ if .Pre_30 }}checked{{ end }}>
                 <label class="custom-control-label" for="chk_pre_30">Pre 30</label>
             </div>
       <button class="mt-3 btn btn-lg btn-primary btn-block" type="submit">Save</button>
