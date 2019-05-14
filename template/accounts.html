@@ -24,11 +24,11 @@
                   </thead>
                 <tbody>
                 {{ range .Accounts }}
-                    {{ if and (eq .Account.Password_changed false) (eq .Banned false) }}
+                    {{ if and (eq .Account.PasswordChanged false) (eq .Banned false) }}
                     <tr>
                         <td><a href="/edit/{{ .Account.Id }}">✏ </a></td>
                         <td>{{ .Account.Region }}</td>
-                        <td>{{ if (ne .Account.Tag "") }}<span class="badge badge-primary">{{ .Account.Tag }}</span>{{ end }}{{ if .Account.Leaverbuster }}<span class="badge badge-warning">{{ .Account.Leaverbuster }} min</span>{{ end }}{{ if .Account.Pre_30 }}<span class="badge badge-info">Pre 30</span>{{ end }}{{ if .Account.Ban }}<span class="badge badge-danger">!</span>{{ end }}</td>
+                        <td>{{ if (ne .Account.Tag "") }}<span class="badge badge-primary">{{ .Account.Tag }}</span>{{ end }}{{ if .Account.Leaverbuster }}<span class="badge badge-warning">{{ .Account.Leaverbuster }} min</span>{{ end }}{{ if .Account.Pre30 }}<span class="badge badge-info">Pre 30</span>{{ end }}{{ if .Account.Ban }}<span class="badge badge-danger">!</span>{{ end }}</td>
                         <td><a href="{{ .Link }}">{{ .Account.Ign }}</a></td>
                         <td>{{ .Account.Username }}</td>
                         <td>{{ .Account.Password }}</td>
@@ -56,11 +56,11 @@
                   </thead>
                 <tbody>
                 {{ range .Accounts }}
-                    {{ if and (ne .Banned false) (ne .Account.Ban "permanent") }}
+                    {{ if and (ne .Banned false) (ne .Account.Perma false) }}
                     <tr>
                         <td><a href="/edit/{{ .Account.Id }}">✏ </a></td>
                         <td>{{ .Account.Region }}</td>
-                        <td>{{ if (ne .Account.Tag "") }}<span class="badge badge-primary">{{ .Account.Tag }}</span>{{ end }}{{ if .Account.Leaverbuster }}<span class="badge badge-warning">{{ .Account.Leaverbuster }} min</span>{{ end }}{{ if .Account.Pre_30 }}<span class="badge badge-info">Pre 30</span>{{ end }}</td>
+                        <td>{{ if (ne .Account.Tag "") }}<span class="badge badge-primary">{{ .Account.Tag }}</span>{{ end }}{{ if .Account.Leaverbuster }}<span class="badge badge-warning">{{ .Account.Leaverbuster }} min</span>{{ end }}{{ if .Account.Pre30 }}<span class="badge badge-info">Pre 30</span>{{ end }}</td>
                         <td><a href="{{ .Link }}">{{ .Account.Ign }}</a></td>
                         <td>{{ .Account.Username }}</td>
                         <td>{{ .Account.Password }}</td>
@@ -90,17 +90,17 @@
                   </thead>
                 <tbody>
                 {{ range .Accounts }}
-                    {{ if or (ne .Account.Password_changed false) (eq .Account.Ban "permanent") }}
+                    {{ if or (ne .Account.PasswordChanged false) (ne .Account.Perma false) }}
                     <tr>
                         <td><a href="/edit/{{ .Account.Id }}">✏ </a></td>
                         <td>{{ .Account.Region }}</td>
-                        <td>{{ if (ne .Account.Tag "") }}<span class="badge badge-primary">{{ .Account.Tag }}</span>{{ end }}{{ if .Account.Leaverbuster }}<span class="badge badge-warning">{{ .Account.Leaverbuster }} min</span>{{ end }}{{ if .Account.Pre_30 }}<span class="badge badge-info">Pre 30</span>{{ end }}</td>
+                        <td>{{ if (ne .Account.Tag "") }}<span class="badge badge-primary">{{ .Account.Tag }}</span>{{ end }}{{ if .Account.Leaverbuster }}<span class="badge badge-warning">{{ .Account.Leaverbuster }} min</span>{{ end }}{{ if .Account.Pre30 }}<span class="badge badge-info">Pre 30</span>{{ end }}</td>
                         <td><a href="{{ .Link }}">{{ .Account.Ign }}</a></td>
                         <td>{{ .Account.Username }}</td>
                         <td>{{ .Account.Password }}</td>
                         <td>{{ .Account.User }}</td>
                         <td>{{ .Account.Ban }}</td>
-                        <td>{{ if .Account.Password_changed }}Yes{{ end }}</td>
+                        <td>{{ if .Account.PasswordChanged }}Yes{{ end }}</td>
                         <td>{{ .Elo }}</td>
                     </tr>
                     {{ end }}
