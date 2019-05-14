@@ -51,6 +51,7 @@ type AccountJson struct {
     Ban                 string      `json:"ban"`
     Password_changed    bool        `json:"password_changed"`
     Pre_30              bool        `json:"pre_30"`
+    Elo                 bool        `json:"elo"`
 }
 
 type AccountData struct {
@@ -157,22 +158,6 @@ func edit(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    if r.Method == http.MethodPost {
-        fmt.Println(r.FormValue("region"))
-        fmt.Println(r.FormValue("tag"))
-        fmt.Println(r.FormValue("ign"))
-        fmt.Println(r.FormValue("username"))
-        fmt.Println(r.FormValue("password"))
-        fmt.Println(r.FormValue("user"))
-        fmt.Println(r.FormValue("leaverbuster"))
-        fmt.Println(r.FormValue("ban"))
-        fmt.Println(r.FormValue("password_changed"))
-        fmt.Println(r.FormValue("pre_30"))
-
-        http.Redirect(w, r, "/", http.StatusSeeOther)
-        return
-    }
-
     accountsParsed, err := parseAccountsJsonFile()
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
@@ -194,6 +179,55 @@ func edit(w http.ResponseWriter, r *http.Request) {
     }
 
     currentAccount := AccountJson(accountsParsed[id])
+
+    if r.Method == http.MethodPost {
+        currentAccount.Region = r.FormValue("region")
+        currentAccount.Tag = r.FormValue("tag")
+        currentAccount.Ign = r.FormValue("ign")
+        currentAccount.Username = r.FormValue("username")
+        currentAccount.Password = r.FormValue("password")
+        currentAccount.User = r.FormValue("user")
+
+        leaverbuster, err := strconv.Atoi(r.FormValue("leaverbuster"))
+        if err != nil {
+            w.WriteHeader(http.StatusBadRequest)
+            fmt.Fprintln(w, "Bad Request")
+            return
+        }
+        currentAccount.Leaverbuster = leaverbuster
+
+        currentAccount.Ban = r.FormValue("ban")
+
+        passwordChangedForm := r.FormValue("password_changed")
+        var passwordChanged bool
+        if passwordChangedForm == "true" {
+            passwordChanged = true
+        } else if passwordChangedForm == "false" || passwordChangedForm == "" {
+            passwordChanged = false
+        } else {
+            w.WriteHeader(http.StatusBadRequest)
+            fmt.Fprintln(w, "Bad Request")
+            return
+        }
+        currentAccount.Password_changed = passwordChanged
+
+        pre30Form := r.FormValue("pre_30")
+        var pre30 bool
+        if pre30Form == "true" {
+            pre30 = true
+        } else if pre30Form == "false" || pre30Form == "" {
+            pre30 = false
+        } else {
+            w.WriteHeader(http.StatusBadRequest)
+            fmt.Fprintln(w, "Bad Request")
+            return
+        }
+        currentAccount.Pre_30 = pre30
+
+        http.Redirect(w, r, "/", http.StatusSeeOther)
+        return
+    }
+
     data := EditPage{Users: loginUsernames, Username: currentUsername, Account: currentAccount}
 
     templates.ExecuteTemplate(w, "edit.html", data)
