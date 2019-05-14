@@ -3,62 +3,48 @@ package main
 import (
     "os"
     "time"
-    "io/ioutil"
     "fmt"
-    "strconv"
     "log"
     "net/http"
     "html/template"
     "crypto/rand"
+    "golang.org/x/crypto/bcrypt"
     "encoding/base64"
-    "encoding/json"
     "github.com/gorilla/mux"
+    "database/sql"
+    "github.com/go-sql-driver/mysql"
 )
 
+var templates *template.Template
+
 type User struct {
+    ID          int
+    Username    string
     Password    string
-    Token       *string
+    Token       string
 }
 
-var u1Token string = ""
-var u2Token string = ""
-
-var loginUsernames = []string { os.Getenv("LEAGUE_ACCS_USER1"), os.Getenv("LEAGUE_ACCS_USER2"), }
-
-var users = map[string]User {
-    loginUsernames[0]: {Password: os.Getenv("LEAGUE_ACCS_USER1_PW"), Token: &u1Token},
-    loginUsernames[1]: {Password: os.Getenv("LEAGUE_ACCS_USER2_PW"), Token: &u2Token},
-}
-
-var templates = template.Must(template.ParseGlob(os.Getenv("LEAGUE_ACCS_TEMPLATE_DIR")))
-
-var accountsJsonFile = os.Getenv("LEAGUE_ACCS_JSON")
-
-type LoginPage struct {
-    Username string
-    Password string
-}
-
-type AccountJson struct {
-    Id                  int         `json:"id"`
-    Region              string      `json:"region"`
-    Tag                 string      `json:"tag"`
-    Ign                 string      `json:"ign"`
-    Username            string      `json:"username"`
-    Password            string      `json:"password"`
-    User                string      `json:"user"`
-    Leaverbuster        int         `json:"leaverbuster"`
-    Ban                 string      `json:"ban"`
-    Password_changed    bool        `json:"password_changed"`
-    Pre_30              bool        `json:"pre_30"`
-    Elo                 bool        `json:"elo"`
+type AccountDb struct {
+    Id                  int             `json:"id"`
+    Region              string          `json:"region"`
+    Tag                 string          `json:"tag"`
+    Ign                 string          `json:"ign"`
+    Username            string          `json:"username"`
+    Password            string          `json:"password"`
+    User                string          `json:"user"`
+    Leaverbuster        int             `json:"leaverbuster"`
+    Ban                 mysql.NullTime  `json:"ban"`
+    Perma               bool            `json:"ban"`
+    PasswordChanged     bool            `json:"password_changed"`
+    Pre30               bool            `json:"pre_30"`
+    Elo                 string          `json:"pre_30"`
 }
 
 type AccountData struct {
     Banned  bool
     Link    string
     Elo     string
-    Account AccountJson
+    Account AccountDb
 }
 
 type AccountsPage struct {
@@ -69,56 +55,74 @@ type AccountsPage struct {
 type EditPage struct {
     Users       []string
     Username    string
-    Account     AccountJson
+    Account     AccountDb
 }
 
+var db *sql.DB
+
 func main() {
-    accountsJsonFileStat, err := os.Stat(accountsJsonFile)
-    log.Println("Using", accountsJsonFile)
+    templates = template.Must(template.ParseGlob(os.Getenv("LEAGUE_ACCS_TEMPLATE_DIR")))
+
+    var err error
+    db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/lol_accs",
+        os.Getenv("LEAGUE_ACCS_DB_USER"),
+        os.Getenv("LEAGUE_ACCS_DB_PASSWORD"),
+        os.Getenv("LEAGUE_ACCS_DB_ADDRESS")))
     if err != nil {
-        log.Fatal("ERROR: Error loading Json file. LEAGUE_ACCS_JSON set correctly?")
+        log.Fatal(err)
     }
-    if accountsJsonFileStat.Mode().IsRegular() == false {
-        log.Fatal("ERROR: LEAGUE_ACCS_JSON is not a regular file!")
+
+    err = db.Ping()
+    if err != nil {
+        log.Fatal(err)
     }
+
+    defer db.Close()
 
     router := mux.NewRouter()
     router.HandleFunc("/login", login)
     router.HandleFunc("/", accounts)
-    router.HandleFunc("/edit/{id:[0-9]+}", edit)
+    // router.HandleFunc("/edit/{id:[0-9]+}", edit)
     log.Fatal(http.ListenAndServe(":8080", router))
 }
 
-func parseAccountsJsonFile() ([]AccountJson, error) {
-    accountsFile, err := os.Open(accountsJsonFile)
+func allAccounts() ([]*AccountDb, error) {
+    rows, err := db.Query("SELECT * FROM accounts")
     if err != nil {
         return nil, err
     }
-    defer accountsFile.Close()
+    defer rows.Close()
 
-    accountsContent, err := ioutil.ReadAll(accountsFile)
-    if err != nil {
-        return nil, err
+    accs := make([]*AccountDb, 0)
+    for rows.Next() {
+        acc := new(AccountDb)
+        err := rows.Scan(&acc.Id, &acc.Region, &acc.Tag, &acc.Ign,
+            &acc.Username, &acc.Password, &acc.User, &acc.Leaverbuster,
+            &acc.Ban, &acc.Perma, &acc.PasswordChanged, &acc.Pre30, &acc.Elo)
+        if err != nil {
+            return nil, err
+        }
+        accs = append(accs, acc)
     }
 
-    var accountsParsed []AccountJson
-    json.Unmarshal(accountsContent, &accountsParsed)
-    return accountsParsed, nil
+    if err = rows.Err(); err != nil {
+        return nil, err
+    }
+    return accs, nil
 }
 
 func accounts(w http.ResponseWriter, r *http.Request) {
-    currentUsername, err := checkAuth(w, r)
+    curUser, err := checkAuth(w, r)
     if err != nil {
         return
     }
 
-    accountsParsed, err := parseAccountsJsonFile()
+    accountsParsed, err := allAccounts()
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         fmt.Fprintln(w, "Internal Server Error")
         return
     }
-
 
     var accountsComputed []AccountData
     var link, elo string
@@ -129,134 +133,132 @@ func accounts(w http.ResponseWriter, r *http.Request) {
 
         elo = "Not implemented"
 
-        if account.Ban == "permanent" {
+        if account.Perma {
             banned = true
-        } else if account.Ban != "" {
-            ban, err := time.Parse(time.RFC3339, account.Ban)
-            if err != nil {
-                log.Println("ERROR: Couldn't parse date:", account.Ban)
-                banned = false
-            } else if ban.Unix() - time.Now().Unix() > 0 {
+        } else if account.Ban.Valid {
+            if account.Ban.Time.Unix() - time.Now().Unix() > 0 {
                 banned = true
             }
         } else {
             banned = false
         }
 
-        accountsComputed = append(accountsComputed, AccountData{Banned: banned, Link: link, Elo: elo, Account: account})
+        accountsComputed = append(accountsComputed, AccountData{Banned: banned, Link: link, Elo: elo, Account: *account})
     }
 
-    data := AccountsPage{Username: currentUsername, Accounts: accountsComputed}
+    data := AccountsPage{Username: curUser.Username, Accounts: accountsComputed}
 
     templates.ExecuteTemplate(w, "accounts.html", data)
 }
 
-func edit(w http.ResponseWriter, r *http.Request) {
-    currentUsername, err := checkAuth(w, r)
-    // _, err := checkAuth(w, r)
-    if err != nil {
-        return
-    }
+// func edit(w http.ResponseWriter, r *http.Request) {
+//     return
+//     currentUsername, err := checkAuth(w, r)
+//     // _, err := checkAuth(w, r)
+//     if err != nil {
+//         return
+//     }
 
-    accountsParsed, err := parseAccountsJsonFile()
-    if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-        fmt.Fprintln(w, "Internal Server Error")
-        return
-    }
+//     accountsParsed, err := parseAccountsJsonFile()
+//     if err != nil {
+//         w.WriteHeader(http.StatusInternalServerError)
+//         fmt.Fprintln(w, "Internal Server Error")
+//         return
+//     }
 
-    urlVars := mux.Vars(r)
-    id, err := strconv.Atoi(urlVars["id"])
-    if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-        fmt.Fprintln(w, "Internal Server Error")
-        return
-    }
-    if id > len(accountsParsed) - 1 {
-        w.WriteHeader(http.StatusBadRequest)
-        fmt.Fprintln(w, "Bad Request")
-        return
-    }
+//     urlVars := mux.Vars(r)
+//     id, err := strconv.Atoi(urlVars["id"])
+//     if err != nil {
+//         w.WriteHeader(http.StatusInternalServerError)
+//         fmt.Fprintln(w, "Internal Server Error")
+//         return
+//     }
+//     if id > len(accountsParsed) - 1 {
+//         w.WriteHeader(http.StatusBadRequest)
+//         fmt.Fprintln(w, "Bad Request")
+//         return
+//     }
 
-    currentAccount := AccountJson(accountsParsed[id])
+//     currentAccount := AccountJson(accountsParsed[id])
 
-    if r.Method == http.MethodPost {
-        currentAccount.Region = r.FormValue("region")
-        currentAccount.Tag = r.FormValue("tag")
-        currentAccount.Ign = r.FormValue("ign")
-        currentAccount.Username = r.FormValue("username")
-        currentAccount.Password = r.FormValue("password")
-        currentAccount.User = r.FormValue("user")
+//     if r.Method == http.MethodPost {
+//         currentAccount.Region = r.FormValue("region")
+//         currentAccount.Tag = r.FormValue("tag")
+//         currentAccount.Ign = r.FormValue("ign")
+//         currentAccount.Username = r.FormValue("username")
+//         currentAccount.Password = r.FormValue("password")
+//         currentAccount.User = r.FormValue("user")
 
-        leaverbuster, err := strconv.Atoi(r.FormValue("leaverbuster"))
-        if err != nil {
-            w.WriteHeader(http.StatusBadRequest)
-            fmt.Fprintln(w, "Bad Request")
-            return
-        }
-        currentAccount.Leaverbuster = leaverbuster
+//         leaverbuster, err := strconv.Atoi(r.FormValue("leaverbuster"))
+//         if err != nil {
+//             w.WriteHeader(http.StatusBadRequest)
+//             fmt.Fprintln(w, "Bad Request")
+//             return
+//         }
+//         currentAccount.Leaverbuster = leaverbuster
 
-        currentAccount.Ban = r.FormValue("ban")
+//         currentAccount.Ban = r.FormValue("ban")
 
-        passwordChangedForm := r.FormValue("password_changed")
-        var passwordChanged bool
-        if passwordChangedForm == "true" {
-            passwordChanged = true
-        } else if passwordChangedForm == "false" || passwordChangedForm == "" {
-            passwordChanged = false
-        } else {
-            w.WriteHeader(http.StatusBadRequest)
-            fmt.Fprintln(w, "Bad Request")
-            return
-        }
-        currentAccount.Password_changed = passwordChanged
+//         passwordChangedForm := r.FormValue("password_changed")
+//         var passwordChanged bool
+//         if passwordChangedForm == "true" {
+//             passwordChanged = true
+//         } else if passwordChangedForm == "false" || passwordChangedForm == "" {
+//             passwordChanged = false
+//         } else {
+//             w.WriteHeader(http.StatusBadRequest)
+//             fmt.Fprintln(w, "Bad Request")
+//             return
+//         }
+//         currentAccount.Password_changed = passwordChanged
 
-        pre30Form := r.FormValue("pre_30")
-        var pre30 bool
-        if pre30Form == "true" {
-            pre30 = true
-        } else if pre30Form == "false" || pre30Form == "" {
-            pre30 = false
-        } else {
-            w.WriteHeader(http.StatusBadRequest)
-            fmt.Fprintln(w, "Bad Request")
-            return
-        }
-        currentAccount.Pre_30 = pre30
+//         pre30Form := r.FormValue("pre_30")
+//         var pre30 bool
+//         if pre30Form == "true" {
+//             pre30 = true
+//         } else if pre30Form == "false" || pre30Form == "" {
+//             pre30 = false
+//         } else {
+//             w.WriteHeader(http.StatusBadRequest)
+//             fmt.Fprintln(w, "Bad Request")
+//             return
+//         }
+//         currentAccount.Pre_30 = pre30
 
-        http.Redirect(w, r, "/", http.StatusSeeOther)
-        return
-    }
+//         http.Redirect(w, r, "/", http.StatusSeeOther)
+//         return
+//     }
 
-    data := EditPage{Users: loginUsernames, Username: currentUsername, Account: currentAccount}
+//     data := EditPage{Users: loginUsernames, Username: currentUsername, Account: currentAccount}
 
-    templates.ExecuteTemplate(w, "edit.html", data)
-}
+//     templates.ExecuteTemplate(w, "edit.html", data)
+// }
 
-func checkAuth(w http.ResponseWriter, r *http.Request) (string, error) {
-    // return "testuser", nil
+func checkAuth(w http.ResponseWriter, r *http.Request) (User, error) {
+    var curUser User
+
     c, err := r.Cookie("session_token")
     if err != nil {
         if err == http.ErrNoCookie {
             http.Redirect(w, r, "/login", http.StatusSeeOther)
-            return "", err
+            return curUser, err
         }
         w.WriteHeader(http.StatusBadRequest)
         fmt.Fprintln(w, "Bad Request")
-        return "", err
+        return curUser, err
     }
-
     sessionToken := c.Value
-    log.Println("TESTING-TOKEN:", sessionToken)
-    for username, user := range users {
-        if *user.Token == sessionToken {
-            log.Println("AUTH:", username)
-            return username, nil
-        }
+
+    err = db.QueryRow("SELECT * FROM users WHERE Token=?", sessionToken).
+        Scan(&curUser.ID, &curUser.Username, &curUser.Password, &curUser.Token)
+    if err != nil {
+        log.Println("TOKEN: Failed", sessionToken)
+        http.Redirect(w, r, "/login", http.StatusSeeOther)
+        return curUser, err
     }
 
-    http.Redirect(w, r, "/login", http.StatusSeeOther)
-    return "", err
+    log.Println("TOKEN: AUTHORIZED", sessionToken, "for User", curUser.Username)
+    return curUser, nil
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
@@ -265,19 +267,28 @@ func login(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    creds := LoginPage {
-        Username: r.FormValue("username"),
-        Password: r.FormValue("password"),
+    username := r.FormValue("username")
+    passwordHash := r.FormValue("password")
+
+    var curUser User
+    err := db.QueryRow("SELECT * FROM users WHERE Username=?", username).
+        Scan(&curUser.ID, &curUser.Username, &curUser.Password, &curUser.Token)
+    if err != nil {
+        log.Println("LOGIN: Failed.", username, "doesn't exist")
+        http.Redirect(w, r, "/login", http.StatusSeeOther)
+        return
     }
 
-    expectedPassword := users[creds.Username].Password
-    if expectedPassword != creds.Password {
+    byteHash := []byte(passwordHash)
+    err = bcrypt.CompareHashAndPassword([]byte(curUser.Password), byteHash)
+    if err != nil {
+        log.Println("LOGIN: ", curUser.Username, err)
         http.Redirect(w, r, "/login", http.StatusSeeOther)
         return
     }
 
     randBytes := make([]byte, 24)
-    _, err := rand.Read(randBytes)
+    _, err = rand.Read(randBytes)
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         fmt.Fprintln(w, "Internal Server Error")
@@ -285,8 +296,22 @@ func login(w http.ResponseWriter, r *http.Request) {
     }
     sessionToken := base64.URLEncoding.EncodeToString(randBytes)
 
-    *users[creds.Username].Token = sessionToken
-    log.Println("LOGIN:", creds.Username, *users[creds.Username].Token)
+    tokenPrep, err := db.Prepare("UPDATE users SET Token=? WHERE ID=?")
+    if err != nil {
+        log.Println("LOGIN: Failed preparing Token", sessionToken, "for User", curUser.Username, err)
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintln(w, "Internal Server Error")
+        return
+    }
+    _, err = tokenPrep.Exec(sessionToken, curUser.ID)
+    if err != nil {
+        log.Println("LOGIN: Failed storing Token", sessionToken, "for User", curUser.Username, err)
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintln(w, "Internal Server Error")
+        return
+    }
+
+    log.Println("LOGIN:", username, sessionToken)
 
     http.SetCookie(w, &http.Cookie{
         Name:    "session_token",
