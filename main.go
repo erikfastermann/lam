@@ -61,9 +61,14 @@ type AccountData struct {
 }
 
 type AccountsPage struct {
-    Users       []string
     Username    string
     Accounts    []AccountData
+}
+
+type EditPage struct {
+    Users       []string
+    Username    string
+    Account     AccountJson
 }
 
 func main() {
@@ -83,7 +88,7 @@ func main() {
     log.Fatal(http.ListenAndServe(":8080", router))
 }
 
-func parseAccountsJsonFile() ([]AccountData, error) {
+func parseAccountsJsonFile() ([]AccountJson, error) {
     accountsFile, err := os.Open(accountsJsonFile)
     if err != nil {
         return nil, err
@@ -97,6 +102,22 @@ func parseAccountsJsonFile() ([]AccountData, error) {
 
     var accountsParsed []AccountJson
     json.Unmarshal(accountsContent, &accountsParsed)
+    return accountsParsed, nil
+}
+
+func accounts(w http.ResponseWriter, r *http.Request) {
+    currentUsername, err := checkAuth(w, r)
+    if err != nil {
+        return
+    }
+
+    accountsParsed, err := parseAccountsJsonFile()
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintln(w, "Internal Server Error")
+        return
+    }
+
 
     var accountsComputed []AccountData
     var link, elo string
@@ -123,32 +144,15 @@ func parseAccountsJsonFile() ([]AccountData, error) {
 
         accountsComputed = append(accountsComputed, AccountData{Banned: banned, Link: link, Elo: elo, Account: account})
     }
-    return accountsComputed, nil
-}
 
-func accounts(w http.ResponseWriter, r *http.Request) {
-    currentUsername, err := checkAuth(w, r)
-    if err != nil {
-        return
-    }
-
-    accountsParsed, err := parseAccountsJsonFile()
-    if err != nil {
-        w.WriteHeader(http.StatusInternalServerError)
-        fmt.Fprintln(w, "Internal Server Error")
-        return
-    }
-
-
-    data := AccountsPage{Username: currentUsername, Accounts: accountsParsed}
+    data := AccountsPage{Username: currentUsername, Accounts: accountsComputed}
 
     templates.ExecuteTemplate(w, "accounts.html", data)
 }
 
 func edit(w http.ResponseWriter, r *http.Request) {
-    return
-    // currentUsername, err := checkAuth(w, r)
-    _, err := checkAuth(w, r)
+    currentUsername, err := checkAuth(w, r)
+    // _, err := checkAuth(w, r)
     if err != nil {
         return
     }
@@ -189,11 +193,10 @@ func edit(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    // currentAccount := EditTable(accountsParsed[id])
-    // currentAccount.Users = loginUsernames
-    // data := EditPage{Username: currentUsername, Account: currentAccount}
+    currentAccount := AccountJson(accountsParsed[id])
+    data := EditPage{Users: loginUsernames, Username: currentUsername, Account: currentAccount}
 
-    // templates.ExecuteTemplate(w, "edit.html", data)
+    templates.ExecuteTemplate(w, "edit.html", data)
 }
 
 func checkAuth(w http.ResponseWriter, r *http.Request) (string, error) {

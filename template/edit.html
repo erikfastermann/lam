@@ -1,3 +1,4 @@
+{{ $currentUser := .Username }}{{ $Users := .Users }}
 <!doctype html>
 <html lang="de">
     <head>
@@ -53,7 +54,7 @@
   <div class="form-group">
     <label for="sel_user">User</label>
     <select name="user" class="form-control" id="sel_region">
-        {{ $currentUser := .User }}{{ range .Users }}
+        {{ range $Users }}
         <option {{ if (eq $currentUser .)}}selected{{ end }}>{{ . }}</option>
       {{ end }}
     </select>
