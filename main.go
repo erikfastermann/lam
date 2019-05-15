@@ -5,6 +5,7 @@ import (
     "time"
     "fmt"
     "log"
+    "sort"
     "net/http"
     "net/url"
     "html/template"
@@ -43,6 +44,7 @@ type AccountDb struct {
 }
 
 type AccountData struct {
+    Color   string
     Banned  bool
     Link    string
     Account AccountDb
@@ -180,9 +182,9 @@ func accounts(w http.ResponseWriter, r *http.Request) {
 
     var accountsComputed []AccountData
     var link string
-    banned := false
 
     for _, account := range accountsParsed {
+        banned := false
         link = fmt.Sprintf("https://www.leagueofgraphs.com/de/summoner/%s/%s", account.Region, account.Ign)
 
         if account.Perma {
@@ -198,7 +200,31 @@ func accounts(w http.ResponseWriter, r *http.Request) {
         accountsComputed = append(accountsComputed, AccountData{Banned: banned, Link: link, Account: *account})
     }
 
-    data := AccountsPage{Username: curUser.Username, Accounts: accountsComputed}
+    sort.SliceStable(accountsComputed, func(i, j int) bool { return accountsComputed[i].Account.Tag < accountsComputed[j].Account.Tag })
+
+    var accountsFinal []AccountData
+    for i := 0; i < 3; i++ {
+        for _, acc := range accountsComputed {
+            switch i {
+            case 0:
+                if !acc.Banned && !acc.Account.PasswordChanged {
+                    accountsFinal = append(accountsFinal, acc)
+                }
+            case 1:
+                if acc.Banned && !acc.Account.Perma {
+                    acc.Color = "table-warning"
+                    accountsFinal = append(accountsFinal, acc)
+                }
+            case 2:
+                if acc.Account.Perma || acc.Account.PasswordChanged {
+                    acc.Color = "table-danger"
+                    accountsFinal = append(accountsFinal, acc)
+                }
+            }
+        }
+    }
+
+    data := AccountsPage{Username: curUser.Username, Accounts: accountsFinal}
 
     templates.ExecuteTemplate(w, "accounts.html", data)
 }
