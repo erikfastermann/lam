@@ -26,14 +26,14 @@
                 {{ range .Accounts }}
                     {{ if and (eq .Account.PasswordChanged false) (eq .Banned false) }}
                     <tr>
-                        <td><a href="/edit/{{ .Account.Id }}">✏ </a></td>
+                        <td><a href="/edit/{{ .Account.ID }}">✏ </a></td>
                         <td>{{ .Account.Region }}</td>
                         <td>{{ if (ne .Account.Tag "") }}<span class="badge badge-primary">{{ .Account.Tag }}</span>{{ end }}{{ if .Account.Leaverbuster }}<span class="badge badge-warning">{{ .Account.Leaverbuster }} min</span>{{ end }}{{ if .Account.Pre30 }}<span class="badge badge-info">Pre 30</span>{{ end }}{{ if .Account.Ban }}<span class="badge badge-danger">!</span>{{ end }}</td>
                         <td><a href="{{ .Link }}">{{ .Account.Ign }}</a></td>
                         <td>{{ .Account.Username }}</td>
                         <td>{{ .Account.Password }}</td>
                         <td>{{ .Account.User }}</td>
-                        <td>{{ .Elo }}</td>
+                        <td>{{ .Account.Elo }}</td>
                     </tr>
                     {{ end }}
                 {{ end }}
@@ -58,7 +58,7 @@
                 {{ range .Accounts }}
                     {{ if and (ne .Banned false) (ne .Account.Perma false) }}
                     <tr>
-                        <td><a href="/edit/{{ .Account.Id }}">✏ </a></td>
+                        <td><a href="/edit/{{ .Account.ID }}">✏ </a></td>
                         <td>{{ .Account.Region }}</td>
                         <td>{{ if (ne .Account.Tag "") }}<span class="badge badge-primary">{{ .Account.Tag }}</span>{{ end }}{{ if .Account.Leaverbuster }}<span class="badge badge-warning">{{ .Account.Leaverbuster }} min</span>{{ end }}{{ if .Account.Pre30 }}<span class="badge badge-info">Pre 30</span>{{ end }}</td>
                         <td><a href="{{ .Link }}">{{ .Account.Ign }}</a></td>
@@ -66,7 +66,7 @@
                         <td>{{ .Account.Password }}</td>
                         <td>{{ .Account.User }}</td>
                         <td>{{ .Account.Ban }}</td>
-                        <td>{{ .Elo }}</td>
+                        <td>{{ .Account.Elo }}</td>
                     </tr>
                     {{ end }}
                 {{ end }}
@@ -92,7 +92,7 @@
                 {{ range .Accounts }}
                     {{ if or (ne .Account.PasswordChanged false) (ne .Account.Perma false) }}
                     <tr>
-                        <td><a href="/edit/{{ .Account.Id }}">✏ </a></td>
+                        <td><a href="/edit/{{ .Account.ID }}">✏ </a></td>
                         <td>{{ .Account.Region }}</td>
                         <td>{{ if (ne .Account.Tag "") }}<span class="badge badge-primary">{{ .Account.Tag }}</span>{{ end }}{{ if .Account.Leaverbuster }}<span class="badge badge-warning">{{ .Account.Leaverbuster }} min</span>{{ end }}{{ if .Account.Pre30 }}<span class="badge badge-info">Pre 30</span>{{ end }}</td>
                         <td><a href="{{ .Link }}">{{ .Account.Ign }}</a></td>
@@ -101,7 +101,7 @@
                         <td>{{ .Account.User }}</td>
                         <td>{{ .Account.Ban }}</td>
                         <td>{{ if .Account.PasswordChanged }}Yes{{ end }}</td>
-                        <td>{{ .Elo }}</td>
+                        <td>{{ .Account.Elo }}</td>
                     </tr>
                     {{ end }}
                 {{ end }}

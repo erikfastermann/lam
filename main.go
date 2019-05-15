@@ -6,6 +6,7 @@ import (
     "fmt"
     "log"
     "net/http"
+    "net/url"
     "html/template"
     "crypto/rand"
     "golang.org/x/crypto/bcrypt"
@@ -13,6 +14,7 @@ import (
     "github.com/gorilla/mux"
     "database/sql"
     "github.com/go-sql-driver/mysql"
+    "github.com/PuerkitoBio/goquery"
 )
 
 var templates *template.Template
@@ -25,7 +27,7 @@ type User struct {
 }
 
 type AccountDb struct {
-    Id                  int             `json:"id"`
+    ID                  int             `json:"id"`
     Region              string          `json:"region"`
     Tag                 string          `json:"tag"`
     Ign                 string          `json:"ign"`
@@ -43,7 +45,6 @@ type AccountDb struct {
 type AccountData struct {
     Banned  bool
     Link    string
-    Elo     string
     Account AccountDb
 }
 
@@ -79,11 +80,64 @@ func main() {
 
     defer db.Close()
 
+    go webParser()
     router := mux.NewRouter()
     router.HandleFunc("/login", login)
     router.HandleFunc("/", accounts)
     // router.HandleFunc("/edit/{id:[0-9]+}", edit)
     log.Fatal(http.ListenAndServe(":8080", router))
+}
+
+func webParser() {
+    client := &http.Client{
+        Timeout: 10 * time.Second,
+    }
+
+    for range time.NewTicker(5 * time.Minute).C {
+        accs, err := allAccounts()
+        if err != nil {
+            log.Println("WEB-PARSER: ERROR reading from database.", err)
+            return
+        }
+        for _, acc := range accs {
+            url, err := url.Parse(fmt.Sprintf("https://www.leagueofgraphs.com/en/summoner/%s/%s", acc.Region, acc.Ign))
+            if err != nil {
+                log.Println("WEB-PARSER: ERROR escaping", url, err)
+                continue
+            }
+            link := url.String()
+
+            res, err := client.Get(link)
+            if err != nil {
+                log.Println("WEB-PARSER: ERROR opening", link, err)
+                continue
+            }
+            defer res.Body.Close()
+
+            doc, err := goquery.NewDocumentFromReader(res.Body)
+            if err != nil {
+                log.Println("WEB-PARSER: ERROR parsing", link, err)
+                continue
+            }
+            leagueTier := doc.Find(".leagueTier").Text()
+            if leagueTier == "" {
+                log.Println("WEB-PARSER: ERROR finding .leagueTier", link)
+                continue
+            }
+
+            tokenPrep, err := db.Prepare("UPDATE accounts SET Elo=? WHERE ID=?")
+            if err != nil {
+                log.Println("WEB-PARSER: FAILED preparing Elo", leagueTier, "for Account", acc.Ign, err)
+                continue
+            }
+            _, err = tokenPrep.Exec(leagueTier, acc.ID)
+            if err != nil {
+                log.Println("WEB-PARSER: FAILED storing new Elo", leagueTier, "for Account", acc.Ign, err)
+                continue
+            }
+            log.Println("WEB-PARSER: SUCCESS storing new Elo:", leagueTier, "for Account", acc.Ign)
+        }
+    }
 }
 
 func allAccounts() ([]*AccountDb, error) {
@@ -96,7 +150,7 @@ func allAccounts() ([]*AccountDb, error) {
     accs := make([]*AccountDb, 0)
     for rows.Next() {
         acc := new(AccountDb)
-        err := rows.Scan(&acc.Id, &acc.Region, &acc.Tag, &acc.Ign,
+        err := rows.Scan(&acc.ID, &acc.Region, &acc.Tag, &acc.Ign,
             &acc.Username, &acc.Password, &acc.User, &acc.Leaverbuster,
             &acc.Ban, &acc.Perma, &acc.PasswordChanged, &acc.Pre30, &acc.Elo)
         if err != nil {
@@ -125,13 +179,11 @@ func accounts(w http.ResponseWriter, r *http.Request) {
     }
 
     var accountsComputed []AccountData
-    var link, elo string
+    var link string
     banned := false
 
     for _, account := range accountsParsed {
         link = fmt.Sprintf("https://www.leagueofgraphs.com/de/summoner/%s/%s", account.Region, account.Ign)
-
-        elo = "Not implemented"
 
         if account.Perma {
             banned = true
@@ -143,7 +195,7 @@ func accounts(w http.ResponseWriter, r *http.Request) {
             banned = false
         }
 
-        accountsComputed = append(accountsComputed, AccountData{Banned: banned, Link: link, Elo: elo, Account: *account})
+        accountsComputed = append(accountsComputed, AccountData{Banned: banned, Link: link, Account: *account})
     }
 
     data := AccountsPage{Username: curUser.Username, Accounts: accountsComputed}
