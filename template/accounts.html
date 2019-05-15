@@ -1,7 +1,9 @@
-<html>
-    <head>
-        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-        <title>League Accounts</title>
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>League Accounts</title>
     </head>
     <body class="py-4">
         <div class="container">
@@ -19,91 +21,24 @@
                       <th scope="col">IGN</th>
                       <th scope="col">Password</th>
                       <th scope="col">User</th>
-                      <th scope="col">Elo</th>
-                    </tr>
-                  </thead>
-                <tbody>
-                {{ range .Accounts }}
-                    {{ if and (eq .Account.PasswordChanged false) (eq .Banned false) }}
-                    <tr>
-                        <td><a href="/edit/{{ .Account.ID }}">✏ </a></td>
-                        <td>{{ .Account.Region }}</td>
-                        <td>{{ if (ne .Account.Tag "") }}<span class="badge badge-primary">{{ .Account.Tag }}</span>{{ end }}{{ if .Account.Leaverbuster }}<span class="badge badge-warning">{{ .Account.Leaverbuster }} min</span>{{ end }}{{ if .Account.Pre30 }}<span class="badge badge-info">Pre 30</span>{{ end }}{{ if .Account.Ban }}<span class="badge badge-danger">!</span>{{ end }}</td>
-                        <td><a href="{{ .Link }}">{{ .Account.Ign }}</a></td>
-                        <td>{{ .Account.Username }}</td>
-                        <td>{{ .Account.Password }}</td>
-                        <td>{{ .Account.User }}</td>
-                        <td>{{ .Account.Elo }}</td>
-                    </tr>
-                    {{ end }}
-                {{ end }}
-                </tbody>
-            </table>
-            <h2 class="mt-5">Currently banned</h2>
-            <table class="table table-responsive">
-                <thead>
-                    <tr>
-                      <th scope="col"></th>
-                      <th scope="col">Region</th>
-                      <th scope="col">Tags</th>
-                      <th scope="col">Username</th>
-                      <th scope="col">IGN</th>
-                      <th scope="col">Password</th>
-                      <th scope="col">User</th>
                       <th scope="col">Ban</th>
                       <th scope="col">Elo</th>
                     </tr>
                   </thead>
                 <tbody>
                 {{ range .Accounts }}
-                    {{ if and (ne .Banned false) (ne .Account.Perma false) }}
-                    <tr>
+                <tr class="{{ .Color }}">
                         <td><a href="/edit/{{ .Account.ID }}">✏ </a></td>
                         <td>{{ .Account.Region }}</td>
-                        <td>{{ if (ne .Account.Tag "") }}<span class="badge badge-primary">{{ .Account.Tag }}</span>{{ end }}{{ if .Account.Leaverbuster }}<span class="badge badge-warning">{{ .Account.Leaverbuster }} min</span>{{ end }}{{ if .Account.Pre30 }}<span class="badge badge-info">Pre 30</span>{{ end }}</td>
+                        <td>{{ if (ne .Account.Tag "") }}<span class="badge badge-primary">{{ .Account.Tag }}</span>{{ end }}{{ if .Account.Leaverbuster }}<span class="badge badge-warning">{{ .Account.Leaverbuster }} min</span>{{ end }}{{ if .Account.Pre30 }}<span class="badge badge-info">Pre 30</span>{{ end }}{{ if and (eq .Account.Ban.Valid true) (eq .Banned false) (eq .Account.PasswordChanged false) }}<span class="badge badge-danger">!</span>{{ end }}{{ if (eq .Account.PasswordChanged true) }}<span class="badge badge-danger">PW</span>{{ end }}</td>
                         <td><a href="{{ .Link }}">{{ .Account.Ign }}</a></td>
                         <td>{{ .Account.Username }}</td>
                         <td>{{ .Account.Password }}</td>
                         <td>{{ .Account.User }}</td>
-                        <td>{{ .Account.Ban }}</td>
+                        {{ $t := .Account.Ban.Time }}
+                        <td>{{ if (eq .Account.Perma true) }}Permanent{{ else if (eq .Account.Ban.Valid true) }}{{ printf "%d %s %d %02d:%02d" $t.Day $t.Month $t.Year $t.Hour $t.Minute }}{{ else }}Never{{ end }}</td>
                         <td>{{ .Account.Elo }}</td>
                     </tr>
-                    {{ end }}
-                {{ end }}
-                </tbody>
-            </table>
-            <h2 class="mt-5">Gone</h2>
-            <table class="table table-responsive">
-                <thead>
-                    <tr>
-                      <th scope="col"></th>
-                      <th scope="col">Region</th>
-                      <th scope="col">Tags</th>
-                      <th scope="col">Username</th>
-                      <th scope="col">IGN</th>
-                      <th scope="col">Password</th>
-                      <th scope="col">User</th>
-                      <th scope="col">Ban</th>
-                      <th scope="col">Password changed</th>
-                      <th scope="col">Elo</th>
-                    </tr>
-                  </thead>
-                <tbody>
-                {{ range .Accounts }}
-                    {{ if or (ne .Account.PasswordChanged false) (ne .Account.Perma false) }}
-                    <tr>
-                        <td><a href="/edit/{{ .Account.ID }}">✏ </a></td>
-                        <td>{{ .Account.Region }}</td>
-                        <td>{{ if (ne .Account.Tag "") }}<span class="badge badge-primary">{{ .Account.Tag }}</span>{{ end }}{{ if .Account.Leaverbuster }}<span class="badge badge-warning">{{ .Account.Leaverbuster }} min</span>{{ end }}{{ if .Account.Pre30 }}<span class="badge badge-info">Pre 30</span>{{ end }}</td>
-                        <td><a href="{{ .Link }}">{{ .Account.Ign }}</a></td>
-                        <td>{{ .Account.Username }}</td>
-                        <td>{{ .Account.Password }}</td>
-                        <td>{{ .Account.User }}</td>
-                        <td>{{ .Account.Ban }}</td>
-                        <td>{{ if .Account.PasswordChanged }}Yes{{ end }}</td>
-                        <td>{{ .Account.Elo }}</td>
-                    </tr>
-                    {{ end }}
                 {{ end }}
                 </tbody>
             </table>
