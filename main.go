@@ -260,7 +260,6 @@ func edit(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-
     if r.Method == http.MethodPost {
         acc.Region = r.FormValue("region")
         acc.Tag = r.FormValue("tag")
@@ -277,7 +276,36 @@ func edit(w http.ResponseWriter, r *http.Request) {
         }
         acc.Leaverbuster = leaverbuster
 
-        // acc.Ban = r.FormValue("ban")
+		banForm := r.FormValue("ban")
+		var ban mysql.NullTime
+		if banForm == "" {
+            fmt.Println("empty")
+			ban = mysql.NullTime{Valid: false}
+		} else {
+            fmt.Println("date")
+			banTime, err := time.Parse("2006-01-02 15:04", banForm)
+			if err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				fmt.Fprintln(w, "Bad Request")
+				return
+			}
+			ban = mysql.NullTime{Time: banTime, Valid: true}
+		}
+        fmt.Println(ban)
+        acc.Ban = ban
+
+        permaForm := r.FormValue("perma")
+        var perma bool
+        if permaForm == "true" {
+            perma = true
+        } else if permaForm == "false" || permaForm == "" {
+            perma = false
+        } else {
+            w.WriteHeader(http.StatusBadRequest)
+            fmt.Fprintln(w, "Bad Request")
+            return
+        }
+        acc.Perma = perma
 
         passwordChangedForm := r.FormValue("password_changed")
         var passwordChanged bool
@@ -305,8 +333,25 @@ func edit(w http.ResponseWriter, r *http.Request) {
         }
         acc.Pre30 = pre30
 
+		accPrep, err := db.Prepare(`UPDATE accounts SET Region=?, Tag=?, Ign=?, Username=?, Password=?,
+            User=?, Leaverbuster=?, Ban=?, Perma=?, PasswordChanged=?, Pre30=? WHERE ID=?`)
+		if err != nil {
+			log.Println("EDIT: FAILED preparing db for account-id", acc.ID, err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintln(w, "Internal Server Error")
+			return
+		}
+		_, err = accPrep.Exec(acc.Region, acc.Tag, acc.Ign, acc.Username, acc.Password,
+            acc.User, acc.Leaverbuster, acc.Ban, acc.Perma, acc.PasswordChanged, acc.Pre30, acc.ID)
+		if err != nil {
+			log.Println("EDIT: FAILED writing to db for account-id", acc.ID, err)
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintln(w, "Internal Server Error")
+			return
+		}
+
+		log.Println("EDIT: SUCCESS editing account", acc.ID, acc.Ign)
         http.Redirect(w, r, "/", http.StatusSeeOther)
-        return
     }
 
     rows, err := db.Query("SELECT Username FROM users")
