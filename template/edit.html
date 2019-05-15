@@ -1,4 +1,4 @@
-{{ $currentUser := .Username }}{{ $Users := .Users }}
+{{ $Users := .Users }}
 <!doctype html>
 <html lang="de">
     <head>
@@ -54,6 +54,7 @@
   <div class="form-group">
     <label for="sel_user">User</label>
     <select name="user" class="form-control" id="sel_region">
+        {{ $currentUser := .User }}
         {{ range $Users }}
         <option {{ if (eq $currentUser .)}}selected{{ end }}>{{ . }}</option>
       {{ end }}
@@ -68,15 +69,15 @@
     </select>
   </div>
             <div class="form-group">
-    <label for="tb_ban">Ban (e.g.: 2019-05-10T15:48:00+02:00</label>
-    <input name="ban" type="text" class="form-control" id="tb_ban" value="{{ .Ban }}">
+    <label for="tb_ban">Ban</label>
+    <input name="ban" type="text" class="form-control" id="tb_ban" value="{{ .Ban.Value }}">
   </div>
             <div class="custom-control custom-checkbox">
-                <input name="password_changed" class="custom-control-input" type="checkbox" value="true" id="chk_password_changed" {{ if .Password_changed }}checked{{ end }}>
+                <input name="password_changed" class="custom-control-input" type="checkbox" value="true" id="chk_password_changed" {{ if .PasswordChanged }}checked{{ end }}>
                 <label class="custom-control-label" for="chk_password_changed">Password changed</label>
             </div>
             <div class="custom-control custom-checkbox">
-                <input name="pre_30" type="checkbox" class="custom-control-input" value="true" id="chk_pre_30" {{ if .Pre_30 }}checked{{ end }}>
+                <input name="pre_30" type="checkbox" class="custom-control-input" value="true" id="chk_pre_30" {{ if .Pre30 }}checked{{ end }}>
                 <label class="custom-control-label" for="chk_pre_30">Pre 30</label>
             </div>
       <button class="mt-3 btn btn-lg btn-primary btn-block" type="submit">Save</button>
