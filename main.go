@@ -66,13 +66,22 @@ type EditPage struct {
 var db *sql.DB
 
 func main() {
-    templates = template.Must(template.ParseGlob(os.Getenv("LEAGUE_ACCS_TEMPLATE_DIR")))
+    envVar := func(env string) (string) {
+        str := os.Getenv(env)
+        if str == "" {
+            log.Fatalln(env, "is empty or doesn't exist")
+        }
+        return str
+    }
 
+    templateDir := envVar("LEAGUE_ACCS_TEMPLATE_DIR")
+    templates = template.Must(template.ParseGlob(templateDir))
+
+    dbUser := envVar("LEAGUE_ACCS_DB_USER")
+    dbPassword := envVar("LEAGUE_ACCS_DB_PASSWORD")
+    dbAddress := envVar("LEAGUE_ACCS_DB_ADDRESS")
     var err error
-    db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/lol_accs",
-        os.Getenv("LEAGUE_ACCS_DB_USER"),
-        os.Getenv("LEAGUE_ACCS_DB_PASSWORD"),
-        os.Getenv("LEAGUE_ACCS_DB_ADDRESS")))
+    db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/lol_accs", dbUser, dbPassword, dbAddress))
     if err != nil {
         log.Fatal(err)
     }
@@ -86,10 +95,13 @@ func main() {
 
     go webParser()
     router := mux.NewRouter()
-    router.HandleFunc("/login", login)
-    router.HandleFunc("/", accounts)
-    router.HandleFunc("/edit/{id:[0-9]+}", editAcc)
-    router.HandleFunc("/new", newAcc)
+    router.HandleFunc("/login", loginGet).Methods("GET")
+    router.HandleFunc("/login", loginPost).Methods("POST")
+    router.HandleFunc("/", accounts).Methods("GET")
+    router.HandleFunc("/edit/{id:[0-9]+}", editAccGet).Methods("GET")
+    router.HandleFunc("/edit/{id:[0-9]+}", editAccPost).Methods("POST")
+    router.HandleFunc("/new", createAccGet).Methods("GET")
+    router.HandleFunc("/new", createAccPost).Methods("POST")
     log.Fatal(http.ListenAndServe(":8080", router))
 }
 
@@ -177,97 +189,110 @@ func accounts(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    accountsParsed, err := allAccounts()
+    accsParsed, err := allAccounts()
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
         fmt.Fprintln(w, "Internal Server Error")
         return
     }
 
-    var accountsComputed []AccountData
+    var accsComputed []AccountData
     var link string
 
-    for _, account := range accountsParsed {
+    for _, acc := range accsParsed {
         banned := false
-        link = fmt.Sprintf("https://www.leagueofgraphs.com/de/summoner/%s/%s", account.Region, account.Ign)
+        if acc.Region == "" || acc.Ign == "" {
+            link = ""
+        } else {
+            link = fmt.Sprintf("https://www.leagueofgraphs.com/de/summoner/%s/%s", acc.Region, acc.Ign)
+        }
 
-        if account.Perma {
+        if acc.Perma {
             banned = true
-        } else if account.Ban.Valid {
-            if account.Ban.Time.Unix() - time.Now().Unix() > 0 {
+        } else if acc.Ban.Valid {
+            if acc.Ban.Time.Unix() - time.Now().Unix() > 0 {
                 banned = true
             }
         } else {
             banned = false
         }
 
-        accountsComputed = append(accountsComputed, AccountData{Banned: banned, Link: link, Account: *account})
+        accsComputed = append(accsComputed, AccountData{Banned: banned, Link: link, Account: *acc})
     }
 
-    sort.SliceStable(accountsComputed, func(i, j int) bool {
-        return accountsComputed[i].Account.Tag < accountsComputed[j].Account.Tag
+    sort.SliceStable(accsComputed, func(i, j int) bool {
+        return accsComputed[i].Account.Tag < accsComputed[j].Account.Tag
     })
 
-    var accountsFinal []AccountData
+    var accsFinal []AccountData
     for i := 0; i < 3; i++ {
-        for _, acc := range accountsComputed {
+        for _, acc := range accsComputed {
             switch i {
             case 0:
                 if !acc.Banned && !acc.Account.PasswordChanged {
-                    accountsFinal = append(accountsFinal, acc)
+                    accsFinal = append(accsFinal, acc)
                 }
             case 1:
                 if acc.Banned && !acc.Account.Perma {
                     acc.Color = "table-warning"
-                    accountsFinal = append(accountsFinal, acc)
+                    accsFinal = append(accsFinal, acc)
                 }
             case 2:
                 if acc.Account.Perma || acc.Account.PasswordChanged {
                     acc.Color = "table-danger"
-                    accountsFinal = append(accountsFinal, acc)
+                    accsFinal = append(accsFinal, acc)
                 }
             }
         }
     }
 
-    data := AccountsPage{Username: curUser.Username, Accounts: accountsFinal}
-
+    data := AccountsPage{Username: curUser.Username, Accounts: accsFinal}
     templates.ExecuteTemplate(w, "accounts.html", data)
 }
 
-func newAcc(w http.ResponseWriter, r *http.Request) {
+func createAccPost(w http.ResponseWriter, r *http.Request) {
+    if _, err := checkAuth(w, r); err != nil {
+       return
+    }
+
+    if err := r.ParseForm(); err != nil {
+        w.WriteHeader(http.StatusBadRequest)
+        fmt.Fprintln(w, "Bad Request")
+        return
+    }
+
+    acc, err := parseFormAcc(r.PostForm)
+    if err != nil {
+        w.WriteHeader(http.StatusBadRequest)
+        fmt.Fprintln(w, "Bad Request")
+        return
+    }
+
+    accPrep, err := db.Prepare(`INSERT INTO accounts(Region, Tag, Ign, Username, Password,
+        User, Leaverbuster, Ban, Perma, PasswordChanged, Pre30) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    if err != nil {
+        log.Println("NEW: FAILED preparing db for new account.", err)
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintln(w, "Internal Server Error")
+        return
+    }
+    _, err = accPrep.Exec(acc.Region, acc.Tag, acc.Ign, acc.Username, acc.Password,
+        acc.User, acc.Leaverbuster, acc.Ban, acc.Perma, acc.PasswordChanged, acc.Pre30)
+    if err != nil {
+        log.Println("NEW: FAILED writing to db for new account.", err)
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintln(w, "Internal Server Error")
+        return
+    }
+
+    log.Println("NEW: SUCCESS creating account")
+    http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func createAccGet(w http.ResponseWriter, r *http.Request) {
     curUser, err := checkAuth(w, r)
     if err != nil {
        return
-    }
-    acc := AccountDb{Region: "euw", User: curUser.Username}
-
-    if r.Method == http.MethodPost {
-        err := parseForm(w, r, &acc)
-        if err != nil {
-           return
-        }
-
-		accPrep, err := db.Prepare(`INSERT INTO accounts(Region, Tag, Ign, Username, Password,
-            User, Leaverbuster, Ban, Perma, PasswordChanged, Pre30) VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
-		if err != nil {
-			log.Println("NEW: FAILED preparing db for new account.", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintln(w, "Internal Server Error")
-			return
-		}
-		_, err = accPrep.Exec(acc.Region, acc.Tag, acc.Ign, acc.Username, acc.Password,
-            acc.User, acc.Leaverbuster, acc.Ban, acc.Perma, acc.PasswordChanged, acc.Pre30)
-		if err != nil {
-			log.Println("NEW: FAILED writing to db for new account.", err)
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintln(w, "Internal Server Error")
-			return
-		}
-
-		log.Println("NEW: SUCCESS creating account")
-        http.Redirect(w, r, "/", http.StatusSeeOther)
-        return
     }
 
     loginUsers, err := queryUsernames()
@@ -277,12 +302,12 @@ func newAcc(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    acc := AccountDb{Region: "euw", User: curUser.Username}
     data := EditPage{Users: loginUsers, Username: curUser.Username, Account: acc}
     templates.ExecuteTemplate(w, "edit.html", data)
-
 }
 
-func editAcc(w http.ResponseWriter, r *http.Request) {
+func editAccGet(w http.ResponseWriter, r *http.Request) {
     curUser, err := checkAuth(w, r)
     if err != nil {
        return
@@ -309,34 +334,6 @@ func editAcc(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    if r.Method == http.MethodPost {
-        err := parseForm(w, r, &acc)
-        if err != nil {
-           return
-        }
-
-		accPrep, err := db.Prepare(`UPDATE accounts SET Region=?, Tag=?, Ign=?, Username=?, Password=?,
-            User=?, Leaverbuster=?, Ban=?, Perma=?, PasswordChanged=?, Pre30=? WHERE ID=?`)
-		if err != nil {
-			log.Println("EDIT: FAILED preparing db for account-id", acc.ID, err)
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintln(w, "Internal Server Error")
-			return
-		}
-		_, err = accPrep.Exec(acc.Region, acc.Tag, acc.Ign, acc.Username, acc.Password,
-            acc.User, acc.Leaverbuster, acc.Ban, acc.Perma, acc.PasswordChanged, acc.Pre30, acc.ID)
-		if err != nil {
-			log.Println("EDIT: FAILED writing to db for account-id", acc.ID, err)
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintln(w, "Internal Server Error")
-			return
-		}
-
-		log.Println("EDIT: SUCCESS editing account", acc.ID, acc.Ign)
-        http.Redirect(w, r, "/", http.StatusSeeOther)
-        return
-    }
-
     loginUsers, err := queryUsernames()
     if err != nil {
         w.WriteHeader(http.StatusInternalServerError)
@@ -348,76 +345,119 @@ func editAcc(w http.ResponseWriter, r *http.Request) {
     templates.ExecuteTemplate(w, "edit.html", data)
 }
 
-func parseForm(w http.ResponseWriter, r *http.Request, acc *AccountDb) error {
-    acc.Region = r.FormValue("region")
-    acc.Tag = r.FormValue("tag")
-    acc.Ign = r.FormValue("ign")
-    acc.Username = r.FormValue("username")
-    acc.Password = r.FormValue("password")
-    acc.User = r.FormValue("user")
+func editAccPost(w http.ResponseWriter, r *http.Request) {
+    if _, err := checkAuth(w, r); err != nil {
+        return
+    }
 
-    leaverbuster, err := strconv.Atoi(r.FormValue("leaverbuster"))
+    urlVars := mux.Vars(r)
+    id, err := strconv.Atoi(urlVars["id"])
     if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintln(w, "Internal Server Error")
+        return
+    }
+
+    if err := r.ParseForm(); err != nil {
         w.WriteHeader(http.StatusBadRequest)
         fmt.Fprintln(w, "Bad Request")
-        return err
+        return
     }
-    acc.Leaverbuster = leaverbuster
 
-    banForm := r.FormValue("ban")
+    acc, err := parseFormAcc(r.PostForm)
+    if err != nil {
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintln(w, "Bad Request")
+        return
+    }
+
+    accPrep, err := db.Prepare(`UPDATE accounts SET Region=?, Tag=?, Ign=?, Username=?, Password=?,
+        User=?, Leaverbuster=?, Ban=?, Perma=?, PasswordChanged=?, Pre30=? WHERE ID=?`)
+    if err != nil {
+        log.Println("EDIT: FAILED preparing db for account-id", id, err)
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintln(w, "Internal Server Error")
+        return
+    }
+    _, err = accPrep.Exec(acc.Region, acc.Tag, acc.Ign, acc.Username, acc.Password,
+        acc.User, acc.Leaverbuster, acc.Ban, acc.Perma, acc.PasswordChanged, acc.Pre30, id)
+    if err != nil {
+        log.Println("EDIT: FAILED writing to db for account-id", id, err)
+        w.WriteHeader(http.StatusInternalServerError)
+        fmt.Fprintln(w, "Internal Server Error")
+        return
+    }
+
+    log.Println("EDIT: SUCCESS editing account", id, acc.Ign)
+    http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func parseFormAcc(form url.Values) (*AccountDb, error) {
+    acc := new(AccountDb)
+
+    formVal := func(key string) string {
+        val, ok := form[key]
+        if !ok {
+            return ""
+        }
+        return val[0]
+    }
+
+    acc.Region = formVal("region")
+    acc.Tag = formVal("tag")
+    acc.Ign = formVal("ign")
+    acc.Username = formVal("username")
+    acc.Password = formVal("password")
+    acc.User = formVal("user")
+
+    leaverbuster := formVal("leaverbuster")
+    leaverbusterInt, err := strconv.Atoi(leaverbuster)
+    if err != nil {
+        return nil, err
+    }
+    acc.Leaverbuster = leaverbusterInt
+
+    banForm := formVal("ban")
     var ban mysql.NullTime
     if banForm == "" {
         ban = mysql.NullTime{Valid: false}
     } else {
         banTime, err := time.Parse("2006-01-02 15:04", banForm)
         if err != nil {
-            w.WriteHeader(http.StatusBadRequest)
-            fmt.Fprintln(w, "Bad Request")
-            return err
+            return nil, err
         }
         ban = mysql.NullTime{Time: banTime, Valid: true}
     }
     acc.Ban = ban
 
-    permaForm := r.FormValue("perma")
-    var perma bool
-    if permaForm == "true" {
-        perma = true
-    } else if permaForm == "false" || permaForm == "" {
-        perma = false
-    } else {
-        w.WriteHeader(http.StatusBadRequest)
-        fmt.Fprintln(w, "Bad Request")
-        return errors.New("BAD REQUEST")
+    parseBool := func(str string) (bool, error) {
+        if str == "true" {
+            return true, nil
+        }
+        if str == "false" || str == "" {
+            return false, nil
+        }
+        return false, errors.New("BAD REQUEST")
     }
-    acc.Perma = perma
 
-    passwordChangedForm := r.FormValue("password_changed")
-    var passwordChanged bool
-    if passwordChangedForm == "true" {
-        passwordChanged = true
-    } else if passwordChangedForm == "false" || passwordChangedForm == "" {
-        passwordChanged = false
-    } else {
-        w.WriteHeader(http.StatusBadRequest)
-        fmt.Fprintln(w, "Bad Request")
-        return errors.New("BAD REQUEST")
+    perma := formVal("perma")
+    acc.Perma, err = parseBool(perma)
+    if err != nil {
+        return nil, err
     }
-    acc.PasswordChanged = passwordChanged
 
-    pre30Form := r.FormValue("pre_30")
-    var pre30 bool
-    if pre30Form == "true" {
-        pre30 = true
-    } else if pre30Form == "false" || pre30Form == "" {
-        pre30 = false
-    } else {
-        w.WriteHeader(http.StatusBadRequest)
-        fmt.Fprintln(w, "Bad Request")
-        return errors.New("BAD REQUEST")
+    pwChanged := formVal("password_changed")
+    acc.PasswordChanged, err = parseBool(pwChanged)
+    if err != nil {
+        return nil, err
     }
-    acc.Pre30 = pre30
-    return nil
+
+    pre30 := formVal("pre_30")
+    acc.Pre30, err = parseBool(pre30)
+    if err != nil {
+        return nil, err
+    }
+    return acc, nil
 }
 
 func queryUsernames() ([]string, error) {
@@ -445,38 +485,36 @@ func queryUsernames() ([]string, error) {
 }
 
 func checkAuth(w http.ResponseWriter, r *http.Request) (User, error) {
-    var curUser User
-
     c, err := r.Cookie("session_token")
     if err != nil {
         if err == http.ErrNoCookie {
             http.Redirect(w, r, "/login", http.StatusSeeOther)
-            return curUser, err
+            return User{}, err
         }
         w.WriteHeader(http.StatusBadRequest)
         fmt.Fprintln(w, "Bad Request")
-        return curUser, err
+        return User{}, err
     }
     sessionToken := c.Value
 
+    var u User
     err = db.QueryRow("SELECT ID, Username, Password, Token FROM users WHERE Token=?", sessionToken).
-        Scan(&curUser.ID, &curUser.Username, &curUser.Password, &curUser.Token)
+        Scan(&u.ID, &u.Username, &u.Password, &u.Token)
     if err != nil {
         log.Println("TOKEN: Failed", sessionToken)
         http.Redirect(w, r, "/login", http.StatusSeeOther)
-        return curUser, err
+        return User{}, err
     }
 
-    log.Println("TOKEN: AUTHORIZED", sessionToken, "for User", curUser.Username)
-    return curUser, nil
+    log.Println("TOKEN: AUTHORIZED", sessionToken, "for User", u.Username)
+    return u, nil
 }
 
-func login(w http.ResponseWriter, r *http.Request) {
-    if r.Method != http.MethodPost {
-        templates.ExecuteTemplate(w, "login.html", nil)
-        return
-    }
+func loginGet(w http.ResponseWriter, r *http.Request) {
+    templates.ExecuteTemplate(w, "login.html", nil)
+}
 
+func loginPost(w http.ResponseWriter, r *http.Request) {
     username := r.FormValue("username")
     passwordHash := r.FormValue("password")
 
