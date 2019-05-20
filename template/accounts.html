@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="de">
-  <head>
-    <meta charset="utf-8">
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-    <title>League Accounts</title>
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        <title>League Accounts</title>
     </head>
     <body class="py-4">
         <div class="container">
@@ -14,20 +14,20 @@
             <table class="table table-responsive">
                 <thead>
                     <tr>
-                      <th scope="col"></th>
-                      <th scope="col">Region</th>
-                      <th scope="col">Tags</th>
-                      <th scope="col">Username</th>
-                      <th scope="col">IGN</th>
-                      <th scope="col">Password</th>
-                      <th scope="col">User</th>
-                      <th scope="col">Ban</th>
-                      <th scope="col">Elo</th>
+                        <th scope="col"></th>
+                        <th scope="col">Region</th>
+                        <th scope="col">Tags</th>
+                        <th scope="col">Username</th>
+                        <th scope="col">IGN</th>
+                        <th scope="col">Password</th>
+                        <th scope="col">User</th>
+                        <th scope="col">Ban</th>
+                        <th scope="col">Elo</th>
                     </tr>
-                  </thead>
+                </thead>
                 <tbody>
-                {{ range .Accounts }}
-                <tr class="{{ .Color }}">
+                    {{ range .Accounts }}
+                    <tr class="{{ .Color }}">
                         <td><a href="/edit/{{ .Account.ID }}">✏ </a></td>
                         <td>{{ .Account.Region }}</td>
                         <td>{{ if (ne .Account.Tag "") }}<span class="badge badge-primary">{{ .Account.Tag }}</span>{{ end }}{{ if .Account.Leaverbuster }}<span class="badge badge-warning">{{ .Account.Leaverbuster }} min</span>{{ end }}{{ if .Account.Pre30 }}<span class="badge badge-info">Pre 30</span>{{ end }}{{ if and (eq .Account.Ban.Valid true) (eq .Banned false) (eq .Account.PasswordChanged false) }}<span class="badge badge-danger">!</span>{{ end }}{{ if (eq .Account.PasswordChanged true) }}<span class="badge badge-danger">PW</span>{{ end }}</td>
@@ -39,7 +39,7 @@
                         <td>{{ if (eq .Account.Perma true) }}Permanent{{ else if (eq .Account.Ban.Valid true) }}{{ printf "%d %s %d %02d:%02d" $t.Day $t.Month $t.Year $t.Hour $t.Minute }}{{ else }}Never{{ end }}</td>
                         <td>{{ .Account.Elo }}</td>
                     </tr>
-                {{ end }}
+                    {{ end }}
                 </tbody>
             </table>
             <p class="mt-5">Logged in as {{ .Username }}. <a href="/login">Relog</a></p>
