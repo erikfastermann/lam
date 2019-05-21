@@ -6,6 +6,8 @@ A Webapp to store and share League of Legends accounts.
 
 ## Download
 
+After installing Go and configuring GOPATH, run:
+
 ```
 go get github.com/erikfastermann/league-accounts
 ```
