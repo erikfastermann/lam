@@ -5,15 +5,15 @@
         <meta charset="utf-8">
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-        {{ with .Account }}
-        <title>Edit "{{ .Username }}"</title>
+	<title>{{ .Title }}</title>
     </head>
     <body class="py-4">
         <div class="container">
             <nav class="mb-5 navbar navbar-light bg-light">
-                <a class="navbar-brand" href="/">League Accounts</a>
+                <a class="navbar-brand" href="/overview">League Accounts</a>
             </nav>
 
+            {{ with .Account }}
             <form method="POST">
                 <div class="form-group">
                     <label for="sel_region">Region</label>
@@ -40,7 +40,7 @@
                 </div>
                 <div class="form-group">
                     <label for="tb_ign">IGN</label>
-                    <input name="ign" type="text" class="form-control" id="tb_ign" value="{{ .Ign }}">
+                    <input name="ign" type="text" class="form-control" id="tb_ign" value="{{ .IGN }}">
                 </div>
                 <div class="form-group">
                     <label for="tb_username">Username</label>
