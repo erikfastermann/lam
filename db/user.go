@@ -1,14 +1,14 @@
 package db
 
-type User struct {
+type user struct {
 	ID       int
 	Username string
 	Password string
 	Token    string
 }
 
-func (s Service) User(username string) (*User, error) {
-	u := new(User)
+func (s Service) User(username string) (*user, error) {
+	u := new(user)
 	err := s.DB.QueryRow("SELECT ID, Username, Password, Token FROM users WHERE Username=?", username).
 		Scan(&u.ID, &u.Username, &u.Password, &u.Token)
 	if err != nil {
