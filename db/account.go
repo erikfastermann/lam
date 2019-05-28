@@ -1,6 +1,8 @@
 package db
 
-import "github.com/go-sql-driver/mysql"
+import (
+	"github.com/go-sql-driver/mysql"
+)
 
 type Account struct {
 	ID              int
@@ -72,6 +74,14 @@ func (s Service) EditAccount(id int, acc *Account) error {
 		User=?, Leaverbuster=?, Ban=?, Perma=?, PasswordChanged=?, Pre30=? WHERE ID=?`,
 		acc.Region, acc.Tag, acc.IGN, acc.Username, acc.Password,
 		acc.User, acc.Leaverbuster, acc.Ban, acc.Perma, acc.PasswordChanged, acc.Pre30, id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s Service) EditElo(id int, elo string) error {
+	_, err := s.DB.Exec("UPDATE accounts SET Elo=? WHERE ID=?", elo, id)
 	if err != nil {
 		return err
 	}
