@@ -8,8 +8,8 @@
     <body class="py-4">
         <div class="container">
             <nav class="mb-5 navbar navbar-light bg-light">
-                <a class="navbar-brand" href="/">League Accounts</a>
-                <a href="/new" class="badge badge-success">+Add</a>
+                <a class="navbar-brand" href="/overview">League Accounts</a>
+                <a href="/create" class="badge badge-success">+Add</a>
             </nav>
             <table class="table table-responsive">
                 <thead>
@@ -28,16 +28,16 @@
                 <tbody>
                     {{ range .Accounts }}
                     <tr class="{{ .Color }}">
-                        <td><a href="/edit/{{ .Account.ID }}">✏ </a></td>
-                        <td>{{ .Account.Region }}</td>
-                        <td>{{ if (ne .Account.Tag "") }}<span class="badge badge-primary">{{ .Account.Tag }}</span>{{ end }}{{ if .Account.Leaverbuster }}<span class="badge badge-warning">{{ .Account.Leaverbuster }} min</span>{{ end }}{{ if .Account.Pre30 }}<span class="badge badge-info">Pre 30</span>{{ end }}{{ if and (eq .Account.Ban.Valid true) (eq .Banned false) (eq .Account.PasswordChanged false) }}<span class="badge badge-danger">!</span>{{ end }}{{ if (eq .Account.PasswordChanged true) }}<span class="badge badge-danger">PW</span>{{ end }}</td>
-                        <td><a href="{{ .Link }}">{{ .Account.Ign }}</a></td>
-                        <td>{{ .Account.Username }}</td>
-                        <td>{{ .Account.Password }}</td>
-                        <td>{{ .Account.User }}</td>
-                        {{ $t := .Account.Ban.Time }}
-                        <td>{{ if (eq .Account.Perma true) }}Permanent{{ else if (eq .Account.Ban.Valid true) }}{{ printf "%d %s %d %02d:%02d" $t.Day $t.Month $t.Year $t.Hour $t.Minute }}{{ else }}Never{{ end }}</td>
-                        <td>{{ .Account.Elo }}</td>
+                        <td><a href="/edit?id={{ .DB.ID }}">✏ </a></td>
+                        <td>{{ .DB.Region }}</td>
+                        <td>{{ if (ne .DB.Tag "") }}<span class="badge badge-primary">{{ .DB.Tag }}</span>{{ end }}{{ if .DB.Leaverbuster }}<span class="badge badge-warning">{{ .DB.Leaverbuster }} min</span>{{ end }}{{ if .DB.Pre30 }}<span class="badge badge-info">Pre 30</span>{{ end }}{{ if and (eq .DB.Ban.Valid true) (eq .Banned false) (eq .DB.PasswordChanged false) }}<span class="badge badge-danger">!</span>{{ end }}{{ if (eq .DB.PasswordChanged true) }}<span class="badge badge-danger">PW</span>{{ end }}</td>
+                        <td><a href="{{ .Link }}">{{ .DB.IGN }}</a></td>
+                        <td>{{ .DB.Username }}</td>
+                        <td>{{ .DB.Password }}</td>
+                        <td>{{ .DB.User }}</td>
+                        {{ $t := .DB.Ban.Time }}
+                        <td>{{ if (eq .DB.Perma true) }}Permanent{{ else if (eq .DB.Ban.Valid true) }}{{ printf "%d %s %d %02d:%02d" $t.Day $t.Month $t.Year $t.Hour $t.Minute }}{{ else }}Never{{ end }}</td>
+                        <td>{{ .DB.Elo }}</td>
                     </tr>
                     {{ end }}
                 </tbody>
