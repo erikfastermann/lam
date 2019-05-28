@@ -30,7 +30,7 @@ func (h handler) overview(username string, w http.ResponseWriter, r *http.Reques
 	accs := make([]account, 0)
 	for _, acc := range accsDb {
 		banned := false
-		link, _ := linkFromIGN(acc.Region, acc.IGN)
+		link, _ := URLFromIGN(acc.Region, acc.IGN)
 		if acc.Perma {
 			banned = true
 		} else if acc.Ban.Valid {

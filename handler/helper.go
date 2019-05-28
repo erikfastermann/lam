@@ -77,7 +77,7 @@ func accFromForm(form url.Values) (*db.Account, error) {
 	return acc, nil
 }
 
-func linkFromIGN(region, ign string) (string, error) {
+func URLFromIGN(region, ign string) (string, error) {
 	if region == "" || ign == "" {
 		return "", errors.New("ign or region unset")
 	}
