@@ -7,7 +7,7 @@ type User struct {
 	Token    string
 }
 
-func (s Service) GetUser(username string) (*User, error) {
+func (s Service) User(username string) (*User, error) {
 	u := new(User)
 	err := s.DB.QueryRow("SELECT ID, Username, Password, Token FROM users WHERE Username=?", username).
 		Scan(&u.ID, &u.Username, &u.Password, &u.Token)
@@ -17,7 +17,7 @@ func (s Service) GetUser(username string) (*User, error) {
 	return u, nil
 }
 
-func (s Service) SetToken(id int, token string) error {
+func (s Service) EditToken(id int, token string) error {
 	_, err := s.DB.Exec("UPDATE users SET Token=? WHERE ID=?", token, id)
 	if err != nil {
 		return err

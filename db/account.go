@@ -18,7 +18,7 @@ type Account struct {
 	Elo             string
 }
 
-func (s Service) GetAccount(id int) (*Account, error) {
+func (s Service) Account(id int) (*Account, error) {
 	acc := new(Account)
 	err := s.DB.QueryRow(`SELECT ID, Region, Tag, Ign, Username, Password, User,
         Leaverbuster, Ban, Perma, PasswordChanged, Pre30, Elo FROM accounts WHERE ID=?`, id).
@@ -31,7 +31,7 @@ func (s Service) GetAccount(id int) (*Account, error) {
 	return acc, nil
 }
 
-func (s Service) GetAccounts() ([]*Account, error) {
+func (s Service) Accounts() ([]*Account, error) {
 	rows, err := s.DB.Query(`SELECT ID, Region, Tag, Ign, Username, Password, User,
         Leaverbuster, Ban, Perma, PasswordChanged, Pre30, Elo FROM accounts`)
 	if err != nil {
@@ -67,7 +67,7 @@ func (s Service) CreateAccount(acc Account) error {
 	return nil
 }
 
-func (s Service) SetAccount(id int, acc Account) error {
+func (s Service) EditAccount(id int, acc Account) error {
 	_, err := s.DB.Exec(`UPDATE accounts SET Region=?, Tag=?, Ign=?, Username=?, Password=?,
 		User=?, Leaverbuster=?, Ban=?, Perma=?, PasswordChanged=?, Pre30=? WHERE ID=?`,
 		acc.Region, acc.Tag, acc.IGN, acc.Username, acc.Password,
