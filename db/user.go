@@ -39,6 +39,15 @@ func (s Service) Usernames() ([]string, error) {
 	return usernames, err
 }
 
+func (s Service) UsernameByToken(token string) (string, error) {
+	username := new(string)
+	err := s.DB.QueryRow(`SELECT Username FROM users WHERE token=?`, token).Scan(username)
+	if err != nil {
+		return "", err
+	}
+	return *username, nil
+}
+
 func (s Service) EditToken(id int, token string) error {
 	_, err := s.DB.Exec("UPDATE users SET Token=? WHERE ID=?", token, id)
 	if err != nil {
