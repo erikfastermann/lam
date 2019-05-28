@@ -56,7 +56,7 @@ func (s Service) Accounts() ([]*Account, error) {
 	return accs, nil
 }
 
-func (s Service) CreateAccount(acc Account) error {
+func (s Service) CreateAccount(acc *Account) error {
 	_, err := s.DB.Exec(`INSERT INTO accounts(Region, Tag, Ign, Username, 
 		Password, User, Leaverbuster, Ban, Perma, PasswordChanged, Pre30)
 		VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, acc.Region, acc.Tag, acc.IGN, acc.Username,
@@ -67,7 +67,7 @@ func (s Service) CreateAccount(acc Account) error {
 	return nil
 }
 
-func (s Service) EditAccount(id int, acc Account) error {
+func (s Service) EditAccount(id int, acc *Account) error {
 	_, err := s.DB.Exec(`UPDATE accounts SET Region=?, Tag=?, Ign=?, Username=?, Password=?,
 		User=?, Leaverbuster=?, Ban=?, Perma=?, PasswordChanged=?, Pre30=? WHERE ID=?`,
 		acc.Region, acc.Tag, acc.IGN, acc.Username, acc.Password,
