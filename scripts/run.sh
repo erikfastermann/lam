@@ -8,7 +8,7 @@ export LEAGUE_ACCS_DB_USER='erik'
 export LEAGUE_ACCS_DB_PASSWORD='testpass'
 export LEAGUE_ACCS_DB_ADDRESS='localhost:3306'
 export LEAGUE_ACCS_DB_NAME="lol_accs"
-export LEAGUE_ACCS_TEMPLATE_DIR="${GOPATH}/src/github.com/erikfastermann/league-accs/template/*"
+export LEAGUE_ACCS_TEMPLATE_DIR="${GOPATH}/src/github.com/erikfastermann/league-accounts/template/*"
 
-go install github.com/erikfastermann/league-accs
+go install github.com/erikfastermann/league-accounts
 league-accounts
