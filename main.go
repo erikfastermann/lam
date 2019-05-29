@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -34,6 +35,8 @@ func main() {
 	templates := template.Must(template.ParseGlob(templateDir))
 
 	go elo.Parse(db)
+
 	h := handler.New(db, templates)
-	log.Fatal(http.ListenAndServe(":8080", h))
+	port := envVar("LEAGUE_ACCS_PORT")
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), h))
 }

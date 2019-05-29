@@ -59,6 +59,8 @@ go run $GOPATH/src/github.com/erikfastermann/league-accounts
 
 # List of environment variables
 
+Port (e.g.: 8080): LEAGUE_ACCS_PORT
+
 Template Dir (e.g.: template/*): LEAGUE_ACCS_TEMPLATE_DIR
 
 DB User: MYSQL_USER
