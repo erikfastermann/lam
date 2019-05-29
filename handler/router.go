@@ -19,7 +19,7 @@ func (e statusError) Error() string {
 }
 
 type handler struct {
-	db        db.Service
+	db        *db.Service
 	templates *template.Template
 }
 
@@ -72,7 +72,7 @@ func (h handler) withAuth(ah authHandler) loggingHandler {
 	})
 }
 
-func New(db db.Service, templates *template.Template) http.Handler {
+func New(db *db.Service, templates *template.Template) http.Handler {
 	mux := http.NewServeMux()
 	h := handler{db, templates}
 	mux.Handle("/", withLogging(h.withAuth(h.overview)))
