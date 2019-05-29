@@ -14,6 +14,15 @@ sudo docker-compose up -d
 
 **IMPORTANT**: Change the default username and passwords in the docker.env file.
 
+### HTTPS (Production)
+
+To activate HTTPS, add the following in the docker-compose.yml file (webapp -> environment):
+
+```yaml
+LEAGUE_ACCS_PROD: "true"
+LEAGUE_ACCS_PROD_DOMAINS: your-domain.com,www.your-domain.com
+```
+
 ## Manual
 
 After installing Go and configuring GOPATH, run:
@@ -71,3 +80,8 @@ DB Address (e.g.: localhost:3306): LEAGUE_ACCS_DB_ADDRESS
 
 DB Name (e.g.: lol_accs): MYSQL_DATABASE
 
+## HTTPS (Production)
+
+Production (any value = true): LEAGUE_ACCS_PROD
+
+Domains (e.g.: example.com,www.example.com): LEAGUE_ACCS_PROD_DOMAINS

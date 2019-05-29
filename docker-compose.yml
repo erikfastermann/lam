@@ -17,6 +17,7 @@ services:
                 container_name: league-accounts-webapp
                 ports:
                         - "80:80"
+                        - "443:443"
                 restart: on-failure
                 depends_on: 
                         - db
