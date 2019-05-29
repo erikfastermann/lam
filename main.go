@@ -6,10 +6,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/erikfastermann/league-accounts/db"
 	"github.com/erikfastermann/league-accounts/elo"
 	"github.com/erikfastermann/league-accounts/handler"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 func main() {
@@ -37,6 +39,12 @@ func main() {
 	go elo.Parse(db)
 
 	h := handler.New(db, templates)
+	if os.Getenv("LEAGUE_ACCS_PROD") != "" {
+		domains := strings.Split(envVar("LEAGUE_ACCS_PROD_DOMAINS"), ",")
+		log.Printf("Production = true, Domains: %s", domains)
+		log.Fatal(http.Serve(autocert.NewListener(domains...), h))
+		return
+	}
 	port := envVar("LEAGUE_ACCS_PORT")
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), h))
 }
