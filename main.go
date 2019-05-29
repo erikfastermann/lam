@@ -20,10 +20,10 @@ func main() {
 		return str
 	}
 
-	user := envVar("LEAGUE_ACCS_DB_USER")
-	password := envVar("LEAGUE_ACCS_DB_PASSWORD")
+	user := envVar("MYSQL_USER")
+	password := envVar("MYSQL_PASSWORD")
 	address := envVar("LEAGUE_ACCS_DB_ADDRESS")
-	name := envVar("LEAGUE_ACCS_DB_NAME")
+	name := envVar("MYSQL_DATABASE")
 	db, err := db.New(user, password, address, name)
 	if err != nil {
 		log.Fatal(err)
