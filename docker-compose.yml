@@ -5,8 +5,6 @@ services:
                 env_file:
                         - docker.env
                 container_name: league-accounts-db
-                ports:
-                        - "3306:3306"
         webapp:
                 build:
                         context: .
