@@ -16,10 +16,10 @@ sudo docker-compose up -d
 
 ### HTTPS (Production)
 
-To activate HTTPS, add the following in the docker-compose.yml file (webapp -> environment):
+To activate HTTPS, comment out the following in the docker-compose.yml file:
 
 ```yaml
-LEAGUE_ACCS_PROD: "true"
+LEAGUE_ACCS_PROD: 'true'
 LEAGUE_ACCS_PROD_DOMAINS: your-domain.com,www.your-domain.com
 ```
 
