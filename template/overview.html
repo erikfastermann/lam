@@ -6,19 +6,20 @@
         <title>League Accounts</title>
     </head>
     <body class="py-4">
-        <div class="container">
+        <div class="container-fluid">
             <nav class="mb-5 navbar navbar-light bg-light">
                 <a class="navbar-brand" href="/overview">League Accounts</a>
                 <a href="/create" class="badge badge-success">+Add</a>
             </nav>
-            <table class="table table-responsive">
+	    <div class="table-responsive">
+            <table class="table">
                 <thead>
                     <tr>
                         <th scope="col"></th>
                         <th scope="col">Region</th>
                         <th scope="col">Tags</th>
-                        <th scope="col">Username</th>
                         <th scope="col">IGN</th>
+                        <th scope="col">Username</th>
                         <th scope="col">Password</th>
                         <th scope="col">User</th>
                         <th scope="col">Ban</th>
@@ -28,21 +29,50 @@
                 <tbody>
                     {{ range .Accounts }}
                     <tr class="{{ .Color }}">
-                        <td><a href="/edit?id={{ .DB.ID }}">✏ </a></td>
-                        <td>{{ .DB.Region }}</td>
-                        <td>{{ if (ne .DB.Tag "") }}<span class="badge badge-primary">{{ .DB.Tag }}</span>{{ end }}{{ if .DB.Leaverbuster }}<span class="badge badge-warning">{{ .DB.Leaverbuster }} min</span>{{ end }}{{ if .DB.Pre30 }}<span class="badge badge-info">Pre 30</span>{{ end }}{{ if and (eq .DB.Ban.Valid true) (eq .Banned false) (eq .DB.PasswordChanged false) }}<span class="badge badge-danger">!</span>{{ end }}{{ if (eq .DB.PasswordChanged true) }}<span class="badge badge-danger">PW</span>{{ end }}</td>
-                        <td><a href="{{ .Link }}" target="_blank">{{ .DB.IGN }}</a></td>
-                        <td>{{ .DB.Username }}</td>
-                        <td>{{ .DB.Password }}</td>
-                        <td>{{ .DB.User }}</td>
+                        <td class="align-middle"><a href="/edit?id={{ .DB.ID }}">✏ </a></td>
+                        <td class="align-middle">{{ .DB.Region }}</td>
+                        <td class="align-middle">{{ if (ne .DB.Tag "") }}<span class="badge badge-primary">{{ .DB.Tag }}</span>{{ end }}{{ if .DB.Leaverbuster }}<span class="badge badge-warning">{{ .DB.Leaverbuster }} min</span>{{ end }}{{ if .DB.Pre30 }}<span class="badge badge-info">Pre 30</span>{{ end }}{{ if and (eq .DB.Ban.Valid true) (eq .Banned false) (eq .DB.PasswordChanged false) }}<span class="badge badge-danger">!</span>{{ end }}{{ if (eq .DB.PasswordChanged true) }}<span class="badge badge-danger">PW</span>{{ end }}</td>
+                        <td class="align-middle"><a href="{{ .Link }}" target="_blank">{{ .DB.IGN }}</a></td>
+			<td class="align-middle">
+				<div class="input-group">
+					<input type="text" class="form-control" id="{{ .DB.ID }}_username" value="{{ .DB.Username }}" readonly>
+  <div class="input-group-append">
+    <button class="btn btn-outline-secondary" type="button" onclick="copyUsername('{{ .DB.ID }}_username')">📋</button>
+  </div>
+</div>
+			</td>
+			<td class="align-middle">
+				<div class="input-group">
+					<input type="password" class="form-control" id="{{ .DB.ID }}_password" value="{{ .DB.Password }}" readonly>
+  <div class="input-group-append">
+    <button class="btn btn-outline-secondary" type="button" onclick="copyPassword('{{ .DB.ID }}_password')">📋</button>
+  </div>
+</div>
+			</td>
+                        <td class="align-middle">{{ .DB.User }}</td>
                         {{ $t := .DB.Ban.Time }}
-                        <td>{{ if (eq .DB.Perma true) }}Permanent{{ else if (eq .DB.Ban.Valid true) }}{{ printf "%d %s %d %02d:%02d" $t.Day $t.Month $t.Year $t.Hour $t.Minute }}{{ else }}Never{{ end }}</td>
-                        <td>{{ .DB.Elo }}</td>
+                        <td class="align-middle">{{ if (eq .DB.Perma true) }}Permanent{{ else if (eq .DB.Ban.Valid true) }}{{ printf "%d %s %d %02d:%02d" $t.Day $t.Month $t.Year $t.Hour $t.Minute }}{{ else }}Never{{ end }}</td>
+                        <td class="align-middle">{{ .DB.Elo }}</td>
                     </tr>
                     {{ end }}
                 </tbody>
             </table>
+	    </div>
             <p class="mt-5">Logged in as {{ .Username }}. <a href="/login">Relog</a></p>
         </div>
+	<script>
+		function copyUsername(id) {
+			var elem = document.getElementById(id);
+			elem.select();
+			document.execCommand("copy");
+		}
+		function copyPassword(id) {
+			var elem = document.getElementById(id);
+			elem.type = "text";
+			elem.select();
+			document.execCommand("copy");
+			elem.type = "password";
+		}
+	</script>
     </body>
 </html>
