@@ -15,7 +15,10 @@ func (h handler) create(username string, w http.ResponseWriter, r *http.Request)
 		}
 		acc := db.Account{Region: "euw", User: username}
 		data := editPage{Title: "Create new account", Users: usernames, Username: username, Account: acc}
-		h.templates.ExecuteTemplate(w, "edit.html", data)
+		err = h.templates.ExecuteTemplate(w, "edit.html", data)
+		if err != nil {
+			return statusError{http.StatusInternalServerError, err}
+		}
 		return nil
 	}
 

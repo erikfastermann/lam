@@ -23,7 +23,10 @@ func (h handler) edit(username string, w http.ResponseWriter, r *http.Request) e
 		}
 		title := fmt.Sprintf("Edit: %s", acc.IGN)
 		data := editPage{Title: title, Users: usernames, Username: username, Account: *acc}
-		h.templates.ExecuteTemplate(w, "edit.html", data)
+		err = h.templates.ExecuteTemplate(w, "edit.html", data)
+		if err != nil {
+			return statusError{http.StatusInternalServerError, err}
+		}
 		return nil
 	}
 

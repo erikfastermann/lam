@@ -11,7 +11,10 @@ import (
 
 func (h handler) login(w http.ResponseWriter, r *http.Request) error {
 	if r.Method == http.MethodGet {
-		h.templates.ExecuteTemplate(w, "login.html", nil)
+		err := h.templates.ExecuteTemplate(w, "login.html", nil)
+		if err != nil {
+			return statusError{http.StatusInternalServerError, err}
+		}
 		return nil
 	}
 

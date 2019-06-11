@@ -65,6 +65,9 @@ func (h handler) overview(username string, w http.ResponseWriter, r *http.Reques
 	}
 
 	data := accountsPage{Username: username, Accounts: accsSortedByBan}
-	h.templates.ExecuteTemplate(w, "overview.html", data)
+	err = h.templates.ExecuteTemplate(w, "overview.html", data)
+	if err != nil {
+		return statusError{http.StatusInternalServerError, err}
+	}
 	return nil
 }
