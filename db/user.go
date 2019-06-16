@@ -7,9 +7,9 @@ type user struct {
 	Token    string
 }
 
-func (s Service) User(username string) (*user, error) {
+func (db DB) User(username string) (*user, error) {
 	u := new(user)
-	err := s.DB.QueryRow("SELECT ID, Username, Password, Token FROM users WHERE Username=?", username).
+	err := db.QueryRow("SELECT _rowid_, username, password, token FROM users WHERE username=?", username).
 		Scan(&u.ID, &u.Username, &u.Password, &u.Token)
 	if err != nil {
 		return nil, err
@@ -17,8 +17,8 @@ func (s Service) User(username string) (*user, error) {
 	return u, nil
 }
 
-func (s Service) Usernames() ([]string, error) {
-	rows, err := s.DB.Query(`SELECT Username FROM users`)
+func (db DB) Usernames() ([]string, error) {
+	rows, err := db.Query(`SELECT username FROM users`)
 	if err != nil {
 		return nil, err
 	}
@@ -39,17 +39,17 @@ func (s Service) Usernames() ([]string, error) {
 	return usernames, err
 }
 
-func (s Service) UsernameByToken(token string) (string, error) {
+func (db DB) UsernameByToken(token string) (string, error) {
 	username := new(string)
-	err := s.DB.QueryRow(`SELECT Username FROM users WHERE token=?`, token).Scan(username)
+	err := db.QueryRow(`SELECT username FROM users WHERE token=?`, token).Scan(username)
 	if err != nil {
 		return "", err
 	}
 	return *username, nil
 }
 
-func (s Service) EditToken(id int, token string) error {
-	_, err := s.DB.Exec("UPDATE users SET Token=? WHERE ID=?", token, id)
+func (db DB) EditToken(id int, token string) error {
+	_, err := db.Exec("UPDATE users SET token=? WHERE _rowid_=?", token, id)
 	if err != nil {
 		return err
 	}

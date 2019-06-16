@@ -23,15 +23,12 @@ func main() {
 		return str
 	}
 
-	user := envVar("MYSQL_USER")
-	password := envVar("MYSQL_PASSWORD")
-	address := envVar("LEAGUE_ACCS_DB_ADDRESS")
-	name := envVar("MYSQL_DATABASE")
-	db, err := db.New(user, password, address, name)
+	path := envVar("LEAGUE_ACCS_DB_PATH")
+	db, err := db.Init(path)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.DB.Close()
+	defer db.Close()
 
 	templateDir := envVar("LEAGUE_ACCS_TEMPLATE_DIR")
 	templates := template.Must(template.ParseGlob(templateDir))

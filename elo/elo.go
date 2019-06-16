@@ -11,7 +11,7 @@ import (
 	"github.com/erikfastermann/league-accounts/handler"
 )
 
-func Parse(db *db.Service) {
+func Parse(db *db.DB) {
 	l := log.New(os.Stderr, "elo: ", log.Ldate|log.Ltime)
 	client := &http.Client{
 		Timeout: 10 * time.Second,

@@ -20,10 +20,10 @@ type Account struct {
 	Elo             string
 }
 
-func (s Service) Account(id int) (*Account, error) {
+func (db DB) Account(id int) (*Account, error) {
 	acc := new(Account)
-	err := s.DB.QueryRow(`SELECT ID, Region, Tag, Ign, Username, Password, User,
-        Leaverbuster, Ban, Perma, PasswordChanged, Pre30, Elo FROM accounts WHERE ID=?`, id).
+	err := db.QueryRow(`SELECT _rowid_, region, tag, ign, username, password, user,
+        leaverbuster, ban, perma, password_changed, pre_30, elo FROM accounts WHERE _rowid_=?`, id).
 		Scan(&acc.ID, &acc.Region, &acc.Tag, &acc.IGN,
 			&acc.Username, &acc.Password, &acc.User, &acc.Leaverbuster,
 			&acc.Ban, &acc.Perma, &acc.PasswordChanged, &acc.Pre30, &acc.Elo)
@@ -33,9 +33,10 @@ func (s Service) Account(id int) (*Account, error) {
 	return acc, nil
 }
 
-func (s Service) Accounts() ([]*Account, error) {
-	rows, err := s.DB.Query(`SELECT ID, Region, Tag, Ign, Username, Password, User,
-        Leaverbuster, Ban, Perma, PasswordChanged, Pre30, Elo FROM accounts`)
+func (db DB) Accounts() ([]*Account, error) {
+	rows, err := db.Query(`SELECT _rowid_, region, tag, ign, username, password, user,
+		leaverbuster, ban, perma, password_changed, pre_30, elo FROM accounts
+		ORDER BY password_changed ASC, perma ASC, region ASC, tag ASC`)
 	if err != nil {
 		return nil, err
 	}
@@ -58,9 +59,9 @@ func (s Service) Accounts() ([]*Account, error) {
 	return accs, nil
 }
 
-func (s Service) CreateAccount(acc *Account) error {
-	_, err := s.DB.Exec(`INSERT INTO accounts(Region, Tag, Ign, Username, 
-		Password, User, Leaverbuster, Ban, Perma, PasswordChanged, Pre30)
+func (db DB) AddAccount(acc *Account) error {
+	_, err := db.Exec(`INSERT INTO accounts(region, tag, ign, username,
+	 password, user, leaverbuster, ban, perma, password_changed, pre_30, elo)
 		VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, acc.Region, acc.Tag, acc.IGN, acc.Username,
 		acc.Password, acc.User, acc.Leaverbuster, acc.Ban, acc.Perma, acc.PasswordChanged, acc.Pre30)
 	if err != nil {
@@ -69,9 +70,9 @@ func (s Service) CreateAccount(acc *Account) error {
 	return nil
 }
 
-func (s Service) EditAccount(id int, acc *Account) error {
-	_, err := s.DB.Exec(`UPDATE accounts SET Region=?, Tag=?, Ign=?, Username=?, Password=?,
-		User=?, Leaverbuster=?, Ban=?, Perma=?, PasswordChanged=?, Pre30=? WHERE ID=?`,
+func (db DB) EditAccount(id int, acc *Account) error {
+	_, err := db.Exec(`UPDATE accounts SET region=?, tag=?, ign=?, username=?, password=?,
+		user=?, leaverbuster=?, ban=?, perma=?, password_changed=?, pre_30=? WHERE _rowid_=?`,
 		acc.Region, acc.Tag, acc.IGN, acc.Username, acc.Password,
 		acc.User, acc.Leaverbuster, acc.Ban, acc.Perma, acc.PasswordChanged, acc.Pre30, id)
 	if err != nil {
@@ -80,8 +81,8 @@ func (s Service) EditAccount(id int, acc *Account) error {
 	return nil
 }
 
-func (s Service) EditElo(id int, elo string) error {
-	_, err := s.DB.Exec("UPDATE accounts SET Elo=? WHERE ID=?", elo, id)
+func (db DB) EditElo(id int, elo string) error {
+	_, err := db.Exec("UPDATE accounts SET elo=? WHERE _rowid_=?", elo, id)
 	if err != nil {
 		return err
 	}

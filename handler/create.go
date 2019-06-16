@@ -33,7 +33,7 @@ func (h handler) create(username string, w http.ResponseWriter, r *http.Request)
 	if err != nil {
 		return statusError{http.StatusBadRequest, fmt.Errorf("create: failed validating form input, %v", err)}
 	}
-	err = h.db.CreateAccount(acc)
+	err = h.db.AddAccount(acc)
 	if err != nil {
 		return statusError{http.StatusInternalServerError, fmt.Errorf("create: writing to database failed, %v", err)}
 	}
