@@ -29,7 +29,7 @@
 					<tbody>
 						{{ range .Accounts }}
 						<tr class="{{ .Color }}">
-							<td class="align-middle"><a href="/edit?id={{ .DB.ID }}">✏ </a></td>
+							<td class="align-middle"><a href="/edit/{{ .DB.ID }}">✏ </a></td>
 							<td class="align-middle">{{ .DB.Region }}</td>
 							<td class="align-middle">{{ if (ne .DB.Tag "") }}<span class="badge badge-primary">{{ .DB.Tag }}</span>{{ end }}{{ if .DB.Leaverbuster }}<span class="badge badge-warning">{{ .DB.Leaverbuster }} min</span>{{ end }}{{ if .DB.Pre30 }}<span class="badge badge-info">Pre 30</span>{{ end }}{{ if and (eq .DB.Ban.Valid true) (eq .Banned false) (eq .DB.PasswordChanged false) }}<span class="badge badge-danger">!</span>{{ end }}{{ if (eq .DB.PasswordChanged true) }}<span class="badge badge-danger">PW</span>{{ end }}</td>
 							<td class="align-middle"><a href="{{ .Link }}" target="_blank">{{ .DB.IGN }}</a></td>

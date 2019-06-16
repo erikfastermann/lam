@@ -11,6 +11,13 @@ import (
 	"github.com/go-sql-driver/mysql"
 )
 
+type editPage struct {
+	Title    string
+	Users    []string
+	Username string
+	Account  db.Account
+}
+
 func accFromForm(form url.Values) (*db.Account, error) {
 	acc := new(db.Account)
 
