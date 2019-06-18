@@ -23,10 +23,14 @@ sudo docker-compose up -d
 Add a user with the manage-users.go script by running:
 
 ```
-go run $GOPATH/src/github.com/erikfastermann/league-accounts/scripts/manage-users.go -a $LEAGUE_ACCS_DB_PATH
+cd $GOPATH/src/github.com/erikfastermann/league-accounts/scripts
+go get
+go run manage-users.go -a $LEAGUE_ACCS_DB_PATH
 ```
 
 If you don't supply a path, the default for this docker volume will be used.
+
+You might need sudo for this to work.
 
 # HTTPS (Production)
 
