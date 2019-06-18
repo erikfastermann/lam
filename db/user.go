@@ -49,6 +49,17 @@ func (db DB) UserByToken(token string) (*User, error) {
 	return u, nil
 }
 
+func (db DB) AddUser(username, password string) error {
+	_, err := db.Exec(`INSERT INTO users(username, password, token)
+		VALUES(?, ?, '')`, username, password)
+	return err
+}
+
+func (db DB) RemoveUser(username string) error {
+	_, err := db.Exec(`DELETE FROM users WHERE username=?`, username)
+	return err
+}
+
 func (db DB) EditToken(id int, token string) error {
 	_, err := db.Exec("UPDATE users SET token=? WHERE _rowid_=?", token, id)
 	return err
