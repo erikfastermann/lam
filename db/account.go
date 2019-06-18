@@ -61,7 +61,7 @@ func (db DB) Accounts() ([]*Account, error) {
 
 func (db DB) AddAccount(acc *Account) error {
 	_, err := db.Exec(`INSERT INTO accounts(region, tag, ign, username,
-	 password, user, leaverbuster, ban, perma, password_changed, pre_30, elo)
+	 password, user, leaverbuster, ban, perma, password_changed, pre_30)
 		VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, acc.Region, acc.Tag, acc.IGN, acc.Username,
 		acc.Password, acc.User, acc.Leaverbuster, acc.Ban, acc.Perma, acc.PasswordChanged, acc.Pre30)
 	if err != nil {

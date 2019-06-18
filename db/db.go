@@ -40,7 +40,7 @@ func Init(path string) (*DB, error) {
 		perma boolean NOT NULL,
 		password_changed boolean NOT NULL,
 		pre_30 boolean NOT NULL,
-		elo varchar(24) NOT NULL
+		elo varchar(24) NOT NULL DEFAULT 'Not parsed'
 	)`)
 	if err != nil {
 		return nil, err
