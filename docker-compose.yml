@@ -6,7 +6,7 @@ services:
                 environment:
                         LEAGUE_ACCS_PORT: 80
                         LEAGUE_ACCS_DB_PATH: /mnt/league.db
-                        LEAGUE_ACCS_TEMPLATE_DIR: /template/*
+                        LEAGUE_ACCS_TEMPLATE_GLOB: /template/*
                         # LEAGUE_ACCS_PROD: 'true'
                         # LEAGUE_ACCS_PROD_DOMAINS: your-domain.com,www.your-domain.com
                 container_name: league-accounts

@@ -30,8 +30,8 @@ func main() {
 	}
 	defer db.Close()
 
-	templateDir := envVar("LEAGUE_ACCS_TEMPLATE_DIR")
-	templates := template.Must(template.ParseGlob(templateDir))
+	templateGlob := envVar("LEAGUE_ACCS_TEMPLATE_GLOB")
+	templates := template.Must(template.ParseGlob(templateGlob))
 
 	go elo.Parse(db)
 

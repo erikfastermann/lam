@@ -56,7 +56,7 @@ go run $GOPATH/src/github.com/erikfastermann/league-accounts
 
 Port (e.g.: 8080): LEAGUE_ACCS_PORT
 
-Template Dir (e.g.: template/*): LEAGUE_ACCS_TEMPLATE_DIR
+Template Glob (e.g.: template/*): LEAGUE_ACCS_TEMPLATE_GLOB
 
 DB Path (e.g.: /league.db): LEAGUE_ACCS_DB_PATH
 
