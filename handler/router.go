@@ -36,12 +36,12 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func (h Handler) router(w http.ResponseWriter, r *http.Request) (int, error) {
 	var base string
 	base, r.URL.Path = splitURL(r.URL.Path)
-	username, err := h.checkAuth(r)
+	user, err := h.checkAuth(r)
 	if err != nil {
 		return h.login(w, r)
 	}
 	if base == "edit" {
-		return h.edit(username, w, r)
+		return h.edit(user, w, r)
 	}
 	if r.URL.Path != "/" {
 		return http.StatusNotFound, nil
@@ -51,11 +51,14 @@ func (h Handler) router(w http.ResponseWriter, r *http.Request) (int, error) {
 		http.Redirect(w, r, "/overview", http.StatusMovedPermanently)
 		return http.StatusMovedPermanently, nil
 	case "overview":
-		return h.overview(username, w, r)
+		return h.overview(user, w, r)
 	case "create":
-		return h.create(username, w, r)
+		return h.create(user, w, r)
 	case "login":
-		return h.login(w, r)
+		http.Redirect(w, r, "/overview", http.StatusSeeOther)
+		return http.StatusSeeOther, nil
+	case "logout":
+		return h.logout(user, w, r)
 	default:
 		return http.StatusNotFound, nil
 	}
@@ -70,15 +73,15 @@ func splitURL(url string) (string, string) {
 	return split[0], "/" + strings.Join(split[1:], "/")
 }
 
-func (h Handler) checkAuth(r *http.Request) (string, error) {
+func (h Handler) checkAuth(r *http.Request) (*db.User, error) {
 	c, err := r.Cookie("session_token")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	token := c.Value
-	username, err := h.db.UsernameByToken(token)
+	user, err := h.db.UserByToken(token)
 	if err != nil {
-		return "", fmt.Errorf("auth: Token %s not found, %v", token, err)
+		return nil, fmt.Errorf("auth: Token %s not found, %v", token, err)
 	}
-	return username, nil
+	return user, nil
 }

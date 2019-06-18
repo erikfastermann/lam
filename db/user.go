@@ -1,14 +1,14 @@
 package db
 
-type user struct {
+type User struct {
 	ID       int
 	Username string
 	Password string
 	Token    string
 }
 
-func (db DB) User(username string) (*user, error) {
-	u := new(user)
+func (db DB) User(username string) (*User, error) {
+	u := new(User)
 	err := db.QueryRow("SELECT _rowid_, username, password, token FROM users WHERE username=?", username).
 		Scan(&u.ID, &u.Username, &u.Password, &u.Token)
 	if err != nil {
@@ -39,13 +39,14 @@ func (db DB) Usernames() ([]string, error) {
 	return usernames, err
 }
 
-func (db DB) UsernameByToken(token string) (string, error) {
-	username := new(string)
-	err := db.QueryRow(`SELECT username FROM users WHERE token=?`, token).Scan(username)
+func (db DB) UserByToken(token string) (*User, error) {
+	u := new(User)
+	err := db.QueryRow("SELECT _rowid_, username, password, token FROM users WHERE token=?", token).
+		Scan(&u.ID, &u.Username, &u.Password, &u.Token)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return *username, nil
+	return u, nil
 }
 
 func (db DB) EditToken(id int, token string) error {

@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+
+	"github.com/erikfastermann/league-accounts/db"
 )
 
-func (h Handler) edit(username string, w http.ResponseWriter, r *http.Request) (int, error) {
+func (h Handler) edit(user *db.User, w http.ResponseWriter, r *http.Request) (int, error) {
 	id, err := strconv.Atoi(r.URL.Path[1:])
 	if err != nil {
 		return http.StatusBadRequest, fmt.Errorf("edit: couldn't parse id %s", r.URL.Path[1:])
@@ -22,7 +24,7 @@ func (h Handler) edit(username string, w http.ResponseWriter, r *http.Request) (
 			return http.StatusInternalServerError, fmt.Errorf("edit: couldn't query usernames from database, %v", err)
 		}
 		title := fmt.Sprintf("Edit: %s", acc.IGN)
-		data := editPage{Title: title, Users: usernames, Username: username, Account: *acc}
+		data := editPage{Title: title, Users: usernames, Username: user.Username, Account: *acc}
 		err = h.templates.ExecuteTemplate(w, "edit.html", data)
 		if err != nil {
 			return http.StatusInternalServerError, err

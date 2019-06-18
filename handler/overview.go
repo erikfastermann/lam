@@ -20,7 +20,7 @@ type accountsPage struct {
 	Accounts []account
 }
 
-func (h Handler) overview(username string, w http.ResponseWriter, r *http.Request) (int, error) {
+func (h Handler) overview(user *db.User, w http.ResponseWriter, r *http.Request) (int, error) {
 	db, err := h.db.Accounts()
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("overview: couldn't read accounts from database, %v", err)
@@ -52,7 +52,7 @@ func (h Handler) overview(username string, w http.ResponseWriter, r *http.Reques
 		accs = append(accs, account{Color: color, Banned: banned, Link: link, DB: *acc})
 	}
 
-	data := accountsPage{Username: username, Accounts: accs}
+	data := accountsPage{Username: user.Username, Accounts: accs}
 	err = h.templates.ExecuteTemplate(w, "overview.html", data)
 	if err != nil {
 		return http.StatusInternalServerError, err

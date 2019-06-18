@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/erikfastermann/league-accounts/db"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -51,5 +52,14 @@ func (h Handler) login(w http.ResponseWriter, r *http.Request) (int, error) {
 		Value: token,
 	})
 	http.Redirect(w, r, "/overview", http.StatusSeeOther)
+	return http.StatusOK, nil
+}
+
+func (h Handler) logout(user *db.User, w http.ResponseWriter, r *http.Request) (int, error) {
+	err := h.db.EditToken(user.ID, "")
+	if err != nil {
+		return http.StatusInternalServerError, fmt.Errorf("logout: couldn't reset token for username: %s, %v", user.Username, err)
+	}
+	http.Redirect(w, r, "/login", http.StatusSeeOther)
 	return http.StatusOK, nil
 }

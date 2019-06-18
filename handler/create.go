@@ -7,14 +7,14 @@ import (
 	"github.com/erikfastermann/league-accounts/db"
 )
 
-func (h Handler) create(username string, w http.ResponseWriter, r *http.Request) (int, error) {
+func (h Handler) create(user *db.User, w http.ResponseWriter, r *http.Request) (int, error) {
 	if r.Method == http.MethodGet {
 		usernames, err := h.db.Usernames()
 		if err != nil {
 			return http.StatusInternalServerError, fmt.Errorf("Create: Failed querying usernames from database, %v", err)
 		}
-		acc := db.Account{Region: "euw", User: username}
-		data := editPage{Title: "Create new account", Users: usernames, Username: username, Account: acc}
+		acc := db.Account{Region: "euw", User: user.Username}
+		data := editPage{Title: "Create new account", Users: usernames, Username: user.Username, Account: acc}
 		err = h.templates.ExecuteTemplate(w, "edit.html", data)
 		if err != nil {
 			return http.StatusInternalServerError, err
