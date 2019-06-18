@@ -33,7 +33,7 @@ func (h Handler) edit(user *db.User, w http.ResponseWriter, r *http.Request) (in
 	}
 
 	if r.Method != http.MethodPost {
-		return http.StatusMethodNotAllowed, fmt.Errorf("edit: method %d not allowed", r.Method)
+		return http.StatusMethodNotAllowed, fmt.Errorf("edit: method %s not allowed", r.Method)
 	}
 
 	if err := r.ParseForm(); err != nil {

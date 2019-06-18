@@ -20,7 +20,7 @@ func (h Handler) login(w http.ResponseWriter, r *http.Request) (int, error) {
 	}
 
 	if r.Method != http.MethodPost {
-		return http.StatusMethodNotAllowed, fmt.Errorf("login: method %d not allowed", r.Method)
+		return http.StatusMethodNotAllowed, fmt.Errorf("login: method %s not allowed", r.Method)
 	}
 
 	username := r.FormValue("username")

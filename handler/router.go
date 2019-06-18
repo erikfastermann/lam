@@ -40,14 +40,30 @@ func (h Handler) router(w http.ResponseWriter, r *http.Request) (int, error) {
 	if err != nil {
 		return h.login(w, r)
 	}
-	if base == "edit" {
+
+	switch base {
+	case "edit":
 		return h.edit(user, w, r)
-	}
-	if base == "remove" {
+	case "remove":
+		if r.Method != http.MethodGet {
+			return http.StatusMethodNotAllowed, fmt.Errorf("router: method %s is not GET", r.Method)
+		}
 		return h.remove(user, w, r)
 	}
+
 	if r.URL.Path != "/" {
 		return http.StatusNotFound, nil
+	}
+	switch base {
+	case "create":
+		return h.create(user, w, r)
+	case "login":
+		http.Redirect(w, r, "/overview", http.StatusSeeOther)
+		return http.StatusSeeOther, nil
+	}
+
+	if r.Method != http.MethodGet {
+		return http.StatusMethodNotAllowed, fmt.Errorf("router: method %s is not GET", r.Method)
 	}
 	switch base {
 	case "":
@@ -55,16 +71,11 @@ func (h Handler) router(w http.ResponseWriter, r *http.Request) (int, error) {
 		return http.StatusMovedPermanently, nil
 	case "overview":
 		return h.overview(user, w, r)
-	case "create":
-		return h.create(user, w, r)
-	case "login":
-		http.Redirect(w, r, "/overview", http.StatusSeeOther)
-		return http.StatusSeeOther, nil
 	case "logout":
 		return h.logout(user, w, r)
-	default:
-		return http.StatusNotFound, nil
 	}
+
+	return http.StatusNotFound, nil
 }
 
 func splitURL(url string) (string, string) {

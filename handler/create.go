@@ -23,7 +23,7 @@ func (h Handler) create(user *db.User, w http.ResponseWriter, r *http.Request) (
 	}
 
 	if r.Method != http.MethodPost {
-		return http.StatusMethodNotAllowed, fmt.Errorf("create: method %d not allowed", r.Method)
+		return http.StatusMethodNotAllowed, fmt.Errorf("create: method %s not allowed", r.Method)
 	}
 
 	if err := r.ParseForm(); err != nil {
