@@ -37,6 +37,6 @@ func (h Handler) create(user *db.User, w http.ResponseWriter, r *http.Request) (
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("create: writing to database failed, %v", err)
 	}
-	http.Redirect(w, r, "/overview", http.StatusSeeOther)
-	return http.StatusOK, nil
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+	return http.StatusCreated, nil
 }

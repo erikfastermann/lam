@@ -12,16 +12,19 @@ import (
 
 func (h Handler) login(w http.ResponseWriter, r *http.Request) (int, error) {
 	if r.Method == http.MethodGet {
+		w.WriteHeader(http.StatusUnauthorized)
 		err := h.templates.ExecuteTemplate(w, "login.html", nil)
 		if err != nil {
 			return http.StatusInternalServerError, err
 		}
-		return http.StatusOK, nil
+		return http.StatusUnauthorized, nil
 	}
 
 	if r.Method != http.MethodPost {
 		return http.StatusMethodNotAllowed, fmt.Errorf("login: method %s not allowed", r.Method)
 	}
+
+	defer http.Redirect(w, r, "/", http.StatusSeeOther)
 
 	username := r.FormValue("username")
 	passwordHash := r.FormValue("password")
@@ -51,8 +54,7 @@ func (h Handler) login(w http.ResponseWriter, r *http.Request) (int, error) {
 		Name:  "session_token",
 		Value: token,
 	})
-	http.Redirect(w, r, "/overview", http.StatusSeeOther)
-	return http.StatusOK, nil
+	return http.StatusNoContent, nil
 }
 
 func (h Handler) logout(user *db.User, w http.ResponseWriter, r *http.Request) (int, error) {
@@ -60,6 +62,6 @@ func (h Handler) logout(user *db.User, w http.ResponseWriter, r *http.Request) (
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("logout: couldn't reset token for username: %s, %v", user.Username, err)
 	}
-	http.Redirect(w, r, "/login", http.StatusSeeOther)
-	return http.StatusOK, nil
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+	return http.StatusNoContent, nil
 }

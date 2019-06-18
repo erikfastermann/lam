@@ -48,6 +48,6 @@ func (h Handler) edit(user *db.User, w http.ResponseWriter, r *http.Request) (in
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("edit: writing account with id %d to database failed, %v", id, err)
 	}
-	http.Redirect(w, r, "/overview", http.StatusSeeOther)
-	return http.StatusOK, nil
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+	return http.StatusNoContent, nil
 }

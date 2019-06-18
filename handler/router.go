@@ -41,13 +41,17 @@ func (h Handler) router(w http.ResponseWriter, r *http.Request) (int, error) {
 		return h.login(w, r)
 	}
 
-	switch base {
-	case "edit":
+	if base == "edit" {
 		return h.edit(user, w, r)
-	case "remove":
-		if r.Method != http.MethodGet {
-			return http.StatusMethodNotAllowed, fmt.Errorf("router: method %s is not GET", r.Method)
-		}
+	}
+	if base == "create" && r.URL.Path == "/" {
+		return h.create(user, w, r)
+	}
+
+	if r.Method != http.MethodGet {
+		return http.StatusMethodNotAllowed, fmt.Errorf("router: method %s is not allowed", r.Method)
+	}
+	if base == "remove" {
 		return h.remove(user, w, r)
 	}
 
@@ -55,21 +59,7 @@ func (h Handler) router(w http.ResponseWriter, r *http.Request) (int, error) {
 		return http.StatusNotFound, nil
 	}
 	switch base {
-	case "create":
-		return h.create(user, w, r)
-	case "login":
-		http.Redirect(w, r, "/overview", http.StatusSeeOther)
-		return http.StatusSeeOther, nil
-	}
-
-	if r.Method != http.MethodGet {
-		return http.StatusMethodNotAllowed, fmt.Errorf("router: method %s is not GET", r.Method)
-	}
-	switch base {
 	case "":
-		http.Redirect(w, r, "/overview", http.StatusMovedPermanently)
-		return http.StatusMovedPermanently, nil
-	case "overview":
 		return h.overview(user, w, r)
 	case "logout":
 		return h.logout(user, w, r)

@@ -21,6 +21,6 @@ func (h Handler) remove(user *db.User, w http.ResponseWriter, r *http.Request) (
 	if err != nil {
 		return http.StatusInternalServerError, fmt.Errorf("remove: couldn't remove account with id %d from database, %v", id, err)
 	}
-	http.Redirect(w, r, "/overview", http.StatusSeeOther)
-	return http.StatusOK, nil
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+	return http.StatusNoContent, nil
 }
