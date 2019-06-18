@@ -2,17 +2,33 @@
 
 A Webapp to store and share League of Legends accounts.
 
-# Getting started
+# Install
 
-## Docker
+After installing Go and configuring $GOPATH, run:
 
-Clone the repository, install Docker and Docker-compose, then run:
+```
+go get github.com/erikfastermann/league-accounts
+```
+
+# Docker
+
+After installing Docker and Docker-compose, run:
 
 ```
 sudo docker-compose up -d
 ```
 
-### HTTPS (Production)
+# Add a User
+
+Add a user with the manage-users.go script by running:
+
+```
+go run $GOPATH/src/github.com/erikfastermann/league-accounts/scripts/manage-users.go -a $LEAGUE_ACCS_DB_PATH
+```
+
+If you don't supply a path, the default for this docker volume will be used.
+
+# HTTPS (Production)
 
 To activate HTTPS, comment out the following in the docker-compose.yml file:
 
@@ -21,46 +37,17 @@ LEAGUE_ACCS_PROD: 'true'
 LEAGUE_ACCS_PROD_DOMAINS: your-domain.com,www.your-domain.com
 ```
 
-## Manual
+# Appendix
 
-After installing Go and configuring GOPATH, run:
-
-```
-go get github.com/erikfastermann/league-accounts
-```
-
-### Create a user
-
-Generate a salted password hash.
-
-```
-go run $GOPATH/src/github.com/erikfastermann/league-accounts/scripts/gen-pass.go PASSWORD
-```
-
-Copy the output to your clipboard. Then start the sqlite3 console and run the following:
-
-```sql
-INSERT INTO users (username, password, token) VALUES
-('WEB_USERNAME', 'COPIED_PASSWORD_HASH', '');
-```
-
-### Testing
-
-Export the environment variables listed below, then run:
-
-```
-go run $GOPATH/src/github.com/erikfastermann/league-accounts
-```
-
-# List of environment variables
+## List of environment variables
 
 Port (e.g.: 8080): LEAGUE_ACCS_PORT
 
 Template Glob (e.g.: template/*): LEAGUE_ACCS_TEMPLATE_GLOB
 
-DB Path (e.g.: /league.db): LEAGUE_ACCS_DB_PATH
+Sqlite3 DB Path (e.g.: /league.db): LEAGUE_ACCS_DB_PATH
 
-## HTTPS (Production)
+### HTTPS (Production)
 
 Production (any value = true): LEAGUE_ACCS_PROD
 
