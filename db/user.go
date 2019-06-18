@@ -51,8 +51,5 @@ func (db DB) UserByToken(token string) (*User, error) {
 
 func (db DB) EditToken(id int, token string) error {
 	_, err := db.Exec("UPDATE users SET token=? WHERE _rowid_=?", token, id)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }

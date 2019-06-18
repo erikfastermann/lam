@@ -24,6 +24,7 @@
 							<th scope="col">User</th>
 							<th scope="col">Ban</th>
 							<th scope="col">Elo</th>
+							<th scope="col"></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -53,6 +54,7 @@
 							{{ $t := .DB.Ban.Time }}
 							<td class="align-middle">{{ if (eq .DB.Perma true) }}Permanent{{ else if (eq .DB.Ban.Valid true) }}{{ printf "%d %s %d %02d:%02d" $t.Day $t.Month $t.Year $t.Hour $t.Minute }}{{ else }}Never{{ end }}</td>
 							<td class="align-middle">{{ .DB.Elo }}</td>
+							<td class="align-middle"><a href="/remove/{{ .DB.ID }}">❌</a></td>
 						</tr>
 						{{ end }}
 					</tbody>

@@ -43,6 +43,9 @@ func (h Handler) router(w http.ResponseWriter, r *http.Request) (int, error) {
 	if base == "edit" {
 		return h.edit(user, w, r)
 	}
+	if base == "remove" {
+		return h.remove(user, w, r)
+	}
 	if r.URL.Path != "/" {
 		return http.StatusNotFound, nil
 	}

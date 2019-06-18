@@ -64,10 +64,12 @@ func (db DB) AddAccount(acc *Account) error {
 	 password, user, leaverbuster, ban, perma, password_changed, pre_30)
 		VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, acc.Region, acc.Tag, acc.IGN, acc.Username,
 		acc.Password, acc.User, acc.Leaverbuster, acc.Ban, acc.Perma, acc.PasswordChanged, acc.Pre30)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
+}
+
+func (db DB) RemoveAccount(id int) error {
+	_, err := db.Exec(`DELETE FROM accounts WHERE _rowid_=?`, id)
+	return err
 }
 
 func (db DB) EditAccount(id int, acc *Account) error {
@@ -75,16 +77,10 @@ func (db DB) EditAccount(id int, acc *Account) error {
 		user=?, leaverbuster=?, ban=?, perma=?, password_changed=?, pre_30=? WHERE _rowid_=?`,
 		acc.Region, acc.Tag, acc.IGN, acc.Username, acc.Password,
 		acc.User, acc.Leaverbuster, acc.Ban, acc.Perma, acc.PasswordChanged, acc.Pre30, id)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (db DB) EditElo(id int, elo string) error {
 	_, err := db.Exec("UPDATE accounts SET elo=? WHERE _rowid_=?", elo, id)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
