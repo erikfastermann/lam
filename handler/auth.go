@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/erikfastermann/league-accounts/db"
+	"github.com/erikfastermann/lam/db"
 	"golang.org/x/crypto/bcrypt"
 )
 

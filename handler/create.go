@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/erikfastermann/league-accounts/db"
+	"github.com/erikfastermann/lam/db"
 )
 
 func (h Handler) create(user *db.User, w http.ResponseWriter, r *http.Request) (int, error) {

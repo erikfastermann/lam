@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/erikfastermann/league-accounts/db"
+	"github.com/erikfastermann/lam/db"
 	"github.com/go-sql-driver/mysql"
 )
 

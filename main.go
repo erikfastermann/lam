@@ -8,9 +8,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/erikfastermann/league-accounts/db"
-	"github.com/erikfastermann/league-accounts/elo"
-	"github.com/erikfastermann/league-accounts/handler"
+	"github.com/erikfastermann/lam/db"
+	"github.com/erikfastermann/lam/elo"
+	"github.com/erikfastermann/lam/handler"
 	"golang.org/x/crypto/acme/autocert"
 )
 
@@ -23,25 +23,25 @@ func main() {
 		return str
 	}
 
-	path := envVar("LEAGUE_ACCS_DB_PATH")
+	path := envVar("LAM_DB_PATH")
 	db, err := db.Init(path)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer db.Close()
 
-	templateGlob := envVar("LEAGUE_ACCS_TEMPLATE_GLOB")
+	templateGlob := envVar("LAM_TEMPLATE_GLOB")
 	templates := template.Must(template.ParseGlob(templateGlob))
 
 	go elo.Parse(db)
 
 	h := handler.New(db, templates)
-	if os.Getenv("LEAGUE_ACCS_PROD") != "" {
-		domains := strings.Split(envVar("LEAGUE_ACCS_PROD_DOMAINS"), ",")
+	if os.Getenv("LAM_PROD") != "" {
+		domains := strings.Split(envVar("LAM_PROD_DOMAINS"), ",")
 		log.Printf("Production = true, Domains: %s", domains)
 		log.Fatal(http.Serve(autocert.NewListener(domains...), h))
 		return
 	}
-	port := envVar("LEAGUE_ACCS_PORT")
+	port := envVar("LAM_PORT")
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%s", port), h))
 }

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/erikfastermann/league-accounts/db"
+	"github.com/erikfastermann/lam/db"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -18,7 +18,7 @@ func main() {
 		usage()
 	}
 
-	dbPath := "/var/lib/docker/volumes/leagueaccounts_db/_data/league.db"
+	dbPath := "/var/lib/docker/volumes/lam_db/_data/lam.db"
 	if len(os.Args) == 3 {
 		dbPath = os.Args[2]
 	}

@@ -8,7 +8,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/erikfastermann/league-accounts/db"
+	"github.com/erikfastermann/lam/db"
 )
 
 type Handler struct {

@@ -1,5 +1,5 @@
 FROM golang:1.12.5-stretch
-RUN go get -u github.com/erikfastermann/league-accounts
-RUN go build -o /league-accounts github.com/erikfastermann/league-accounts
-RUN cp -r $GOPATH/src/github.com/erikfastermann/league-accounts/template /template
-CMD ["/league-accounts"]
+RUN go get -u github.com/erikfastermann/lam
+RUN go build -o /lam github.com/erikfastermann/lam
+RUN cp -r $GOPATH/src/github.com/erikfastermann/lam/template /template
+CMD ["/lam"]

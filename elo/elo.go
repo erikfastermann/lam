@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/erikfastermann/league-accounts/db"
-	"github.com/erikfastermann/league-accounts/handler"
+	"github.com/erikfastermann/lam/db"
+	"github.com/erikfastermann/lam/handler"
 )
 
 func Parse(db *db.DB) {

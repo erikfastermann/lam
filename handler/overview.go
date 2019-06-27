@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/erikfastermann/league-accounts/db"
+	"github.com/erikfastermann/lam/db"
 )
 
 type account struct {
