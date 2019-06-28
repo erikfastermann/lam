@@ -32,14 +32,22 @@ If you don't supply a path, the default for this docker volume will be used.
 
 You might need sudo for this to work.
 
-# HTTPS (Production)
+# HTTPS
 
-To activate HTTPS, comment out the following in the docker-compose.yml file:
+To activate HTTPS, comment out and adjust the following in the docker-compose.yml file:
 
 ```yaml
-LAM_PROD: 'true'
-LAM_PROD_DOMAINS: your-domain.com,www.your-domain.com
+- path/to/keypairs:/var/lam/keypairs
 ```
+
+```yaml
+LAM_HTTPS_PORT: '443'
+LAM_HTTPS_CERTS: '/var/lam/keypairs/cert-file1,/var/lam/keypairs/cert-file2'
+LAM_HTTPS_KEYS: '/var/lam/keypairs/key-file1,/var/lam/keypairs/key-file2'
+```
+
+NOTE: Don't use different ports for inside and outside the container.
+Redirecting to HTTPS will not work otherwise.
 
 # Appendix
 
@@ -51,8 +59,10 @@ Template Glob (e.g.: template/*): LAM_TEMPLATE_GLOB
 
 Sqlite3 DB Path (e.g.: /lam.db): LAM_DB_PATH
 
-### HTTPS (Production)
+### HTTPS
 
-Production (any value = true): LAM_PROD
+Port (set to activate): LAM_HTTPS_PORT
 
-Domains (e.g.: example.com,www.example.com): LAM_PROD_DOMAINS
+Cert files (eg.: path/to/cert-file,path/to/another/cert-file): LAM_HTTPS_CERTS
+
+Key files (eg.: path/to/key-file,path/to/another/key-file): LAM_HTTPS_KEYS

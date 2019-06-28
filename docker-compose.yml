@@ -6,9 +6,9 @@ services:
                 environment:
                         LAM_PORT: 80
                         LAM_DB_PATH: /mnt/lam.db
-                        LAM_TEMPLATE_GLOB: /template/*
-                        # LAM_PROD: 'true'
-                        # LAM_PROD_DOMAINS: your-domain.com,www.your-domain.com
+                        # LAM_HTTPS_PORT: '443'
+                        # LAM_HTTPS_CERTS: '/var/lam/keypairs/cert-file1,/var/lam/keypairs/cert-file2'
+                        # LAM_HTTPS_KEYS: '/var/lam/keypairs/key-file1,/var/lam/keypairs/key-file2'
                 container_name: lam
                 ports:
                         - "80:80"
@@ -16,5 +16,6 @@ services:
                 restart: on-failure
                 volumes:
                         - db:/mnt
+                        # - path/to/keypairs:/var/lam/keypairs
 volumes:
         db:
