@@ -6,6 +6,7 @@ services:
                 environment:
                         LAM_PORT: 80
                         LAM_DB_PATH: /mnt/lam.db
+                        # LAM_HTTPS_DOMAIN: 'your-domain.com'
                         # LAM_HTTPS_PORT: '443'
                         # LAM_HTTPS_CERTS: '/var/lam/keypairs/cert-file1,/var/lam/keypairs/cert-file2'
                         # LAM_HTTPS_KEYS: '/var/lam/keypairs/key-file1,/var/lam/keypairs/key-file2'

@@ -32,12 +32,11 @@ func main() {
 	h := handler.New(db, templates)
 	port := getenv("LAM_PORT")
 	if tlsPort := os.Getenv("LAM_HTTPS_PORT"); tlsPort != "" {
+		domain := getenv("LAM_HTTPS_DOMAIN")
 		go func() {
-			srv := newServer(port, redirectToHTTPS(tlsPort))
+			srv := newServer(port, redirectToHTTPS(domain, tlsPort))
 			log.Fatal(srv.ListenAndServe())
 		}()
-		log.Printf("server: listening on port %s (https)", tlsPort)
-		log.Printf("server: redirecting http (port: %s) to https", port)
 		srv := newServer(tlsPort, h)
 		var err error
 		srv.TLSConfig, err = newTLSConfig(getenv("LAM_HTTPS_CERTS"), getenv("LAM_HTTPS_KEYS"))
@@ -48,12 +47,14 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		log.Printf("server: listening on port %s (https)", tlsPort)
+		log.Printf("server: redirecting http (port: %s) to https", port)
 		log.Fatal(srv.Serve(listener))
 		return
 	}
 
-	log.Printf("server: listening on port %s (http)", port)
 	srv := newServer(port, h)
+	log.Printf("server: listening on port %s (http)", port)
 	log.Fatal(srv.ListenAndServe())
 }
 
@@ -82,7 +83,7 @@ func newTLSConfig(certFiles, keyFiles string) (*tls.Config, error) {
 	if len(certs) != len(keys) {
 		return nil, errors.New("different number of key and cert files")
 	}
-	if len(certs) == 0 {
+	if certs[0] == "" || keys[0] == "" {
 		return nil, errors.New("no key pairs supplied")
 	}
 	tlsConfig := &tls.Config{
@@ -100,9 +101,8 @@ func newTLSConfig(certFiles, keyFiles string) (*tls.Config, error) {
 	return tlsConfig, nil
 }
 
-func redirectToHTTPS(tlsPort string) http.HandlerFunc {
+func redirectToHTTPS(host, tlsPort string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		host, _, _ := net.SplitHostPort(r.Host)
 		u := r.URL
 		u.Host = net.JoinHostPort(host, tlsPort)
 		u.Scheme = "https"
