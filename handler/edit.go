@@ -23,7 +23,7 @@ func (h Handler) edit(user *db.User, w http.ResponseWriter, r *http.Request) (in
 		if err != nil {
 			return http.StatusInternalServerError, fmt.Errorf("edit: couldn't query usernames from database, %v", err)
 		}
-		title := fmt.Sprintf("Edit: %s", acc.IGN)
+		title := fmt.Sprintf("Edit: %s", strconv.Quote(acc.IGN))
 		data := editPage{Title: title, Users: usernames, Username: user.Username, Account: *acc}
 		err = h.templates.ExecuteTemplate(w, "edit.html", data)
 		if err != nil {

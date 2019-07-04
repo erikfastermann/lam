@@ -1,119 +1,104 @@
-<!doctype html>
-<html lang="de">
-	<head>
-		<meta charset="utf-8">
-		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
-		<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
-		<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
-		<title>LoL Account Manager</title>
-	</head>
-	<body class="py-4">
-		<div class="container-fluid">
-			<nav class="mb-5 navbar navbar-light bg-light">
-				<a class="navbar-brand" href="/">LoL Account Manager</a>
-				<a href="/create" class="badge badge-success">+Add</a>
-			</nav>
-			<div class="table-responsive">
-				<table class="table" style="min-width: 1000px">
-					<thead>
-						<tr>
-							<th scope="col"></th>
-							<th scope="col">Region</th>
-							<th scope="col">Tags</th>
-							<th scope="col">IGN</th>
-							<th scope="col">Username</th>
-							<th scope="col">Password</th>
-							<th scope="col">User</th>
-							<th scope="col">Ban</th>
-							<th scope="col">Elo</th>
-							<th scope="col"></th>
-						</tr>
-					</thead>
-					<tbody>
-						{{ range .Accounts }}
-						<tr class="{{ .Color }}">
-							<td class="align-middle"><a href="/edit/{{ .DB.ID }}">✏ </a></td>
-							<td class="align-middle">{{ .DB.Region }}</td>
-							<td class="align-middle">{{ if (ne .DB.Tag "") }}<span class="badge badge-primary">{{ .DB.Tag }}</span>{{ end }}{{ if .DB.Leaverbuster }}<span class="badge badge-warning">{{ .DB.Leaverbuster }} min</span>{{ end }}{{ if .DB.Pre30 }}<span class="badge badge-info">Pre 30</span>{{ end }}{{ if and (eq .DB.Ban.Valid true) (eq .Banned false) (eq .DB.PasswordChanged false) }}<span class="badge badge-danger">!</span>{{ end }}{{ if (eq .DB.PasswordChanged true) }}<span class="badge badge-danger">PW</span>{{ end }}</td>
-							<td class="align-middle">
-								<div class="input-group">
-									<input type="text" class="form-control" id="{{ .DB.ID }}_ign" value="{{ .DB.IGN }}" readonly>
-									<div class="input-group-append">
-										<button class="btn btn-outline-secondary" type="button" onclick="copyInput('{{ .DB.ID }}_ign')">📋</button>
-									</div>
-								</div>
-							</td>
-							<td class="align-middle">
-								<div class="input-group">
-									<input type="text" class="form-control" id="{{ .DB.ID }}_username" value="{{ .DB.Username }}" readonly>
-									<div class="input-group-append">
-										<button class="btn btn-outline-secondary" type="button" onclick="copyInput('{{ .DB.ID }}_username')">📋</button>
-									</div>
-								</div>
-							</td>
-							<td class="align-middle">
-								<div class="input-group">
-									<input type="password" class="form-control" id="{{ .DB.ID }}_password" value="{{ .DB.Password }}" readonly>
-									<div class="input-group-append">
-										<button class="btn btn-outline-secondary" type="button" onclick="copyPassword('{{ .DB.ID }}_password')">📋</button>
-									</div>
-								</div>
-							</td>
-							<td class="align-middle">{{ .DB.User }}</td>
-							{{ $t := .DB.Ban.Time }}
-							<td class="align-middle">{{ if (eq .DB.Perma true) }}Permanent{{ else if (eq .DB.Ban.Valid true) }}{{ printf "%d %s %d %02d:%02d" $t.Day $t.Month $t.Year $t.Hour $t.Minute }}{{ else }}Never{{ end }}</td>
-							<td class="align-middle"><a {{ if (ne .Link "") }}href="{{ .Link }}"{{ end }} target="_blank">{{ .DB.Elo }}</a></td>
-							<td class="align-middle"><button type="button" class="btn btn-link" data-toggle="modal" data-target="#removeModal" data-id="{{ .DB.ID }}" data-ign="{{ .DB.IGN }}">❌</button></td>
-						</tr>
-						{{ end }}
-					</tbody>
-				</table>
+{{ template "head" "LoL Account Manager" }}
+{{ template "nav" .Username }}
+<div class="container-fluid">
+	<div class="table-responsive">
+		<table class="table" style="min-width: 1000px">
+			<thead>
+				<tr>
+					<th scope="col"></th>
+					<th scope="col">Region</th>
+					<th scope="col">Tags</th>
+					<th scope="col">IGN</th>
+					<th scope="col">Username</th>
+					<th scope="col">Password</th>
+					<th scope="col">User</th>
+					<th scope="col">Ban</th>
+					<th scope="col">Elo</th>
+					<th scope="col"></th>
+				</tr>
+			</thead>
+			<tbody>
+				{{ range .Accounts }}
+				<tr class="{{ .Color }}">
+					<td class="align-middle"><a href="/edit/{{ .DB.ID }}">✏ </a></td>
+					<td class="align-middle">{{ .DB.Region }}</td>
+					<td class="align-middle">{{ if (ne .DB.Tag "") }}<span class="badge badge-primary">{{ .DB.Tag }}</span>{{ end }}{{ if .DB.Leaverbuster }}<span class="badge badge-warning">{{ .DB.Leaverbuster }} min</span>{{ end }}{{ if .DB.Pre30 }}<span class="badge badge-info">Pre 30</span>{{ end }}{{ if and (eq .DB.Ban.Valid true) (eq .Banned false) (eq .DB.PasswordChanged false) }}<span class="badge badge-danger">!</span>{{ end }}{{ if (eq .DB.PasswordChanged true) }}<span class="badge badge-danger">PW</span>{{ end }}</td>
+					<td class="align-middle">
+						<div class="input-group">
+							<input type="text" class="form-control" id="{{ .DB.ID }}_ign" value="{{ .DB.IGN }}" readonly>
+							<div class="input-group-append">
+								<button class="btn btn-outline-secondary" type="button" onclick="copyInput('{{ .DB.ID }}_ign')">📋</button>
+							</div>
+						</div>
+					</td>
+					<td class="align-middle">
+						<div class="input-group">
+							<input type="text" class="form-control" id="{{ .DB.ID }}_username" value="{{ .DB.Username }}" readonly>
+							<div class="input-group-append">
+								<button class="btn btn-outline-secondary" type="button" onclick="copyInput('{{ .DB.ID }}_username')">📋</button>
+							</div>
+						</div>
+					</td>
+					<td class="align-middle">
+						<div class="input-group">
+							<input type="password" class="form-control" id="{{ .DB.ID }}_password" value="{{ .DB.Password }}" readonly>
+							<div class="input-group-append">
+								<button class="btn btn-outline-secondary" type="button" onclick="copyPassword('{{ .DB.ID }}_password')">📋</button>
+							</div>
+						</div>
+					</td>
+					<td class="align-middle">{{ .DB.User }}</td>
+					{{ $t := .DB.Ban.Time }}
+					<td class="align-middle">{{ if (eq .DB.Perma true) }}Permanent{{ else if (eq .DB.Ban.Valid true) }}{{ printf "%d %s %d %02d:%02d" $t.Day $t.Month $t.Year $t.Hour $t.Minute }}{{ else }}Never{{ end }}</td>
+					<td class="align-middle"><a {{ if (ne .Link "") }}href="{{ .Link }}"{{ end }} target="_blank">{{ .DB.Elo }}</a></td>
+					<td class="align-middle"><button type="button" class="btn btn-link" data-toggle="modal" data-target="#removeModal" data-id="{{ .DB.ID }}" data-ign="{{ .DB.IGN }}">❌</button></td>
+				</tr>
+				{{ end }}
+			</tbody>
+		</table>
+	</div>
+</div>
+<div class="modal fade" id="removeModal" tabindex="-1" role="dialog" aria-labelledby="removeModalLabel" aria-hidden="true">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="removeModalLabel">Remove account?</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
 			</div>
-			<p class="mt-5">Logged in as {{ .Username }}. <a href="/logout">Logout</a></p>
-		</div>
-		<div class="modal fade" id="removeModal" tabindex="-1" role="dialog" aria-labelledby="removeModalLabel" aria-hidden="true">
-			<div class="modal-dialog" role="document">
-				<div class="modal-content">
-					<div class="modal-header">
-						<h5 class="modal-title" id="removeModalLabel">Remove account?</h5>
-						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-							<span aria-hidden="true">&times;</span>
-						</button>
-					</div>
-					<div class="modal-body">
-						<p><b>ID:</b> <span id="modal-id">-1</span></p>
-						<p><b>IGN:</b> "<span  id="modal-ign"></span>"</p>
-					</div>
-					<div class="modal-footer">
-						<button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-						<a id="modal-btn-remove" class="btn btn-danger" href="#" role="button">Remove</a>
-					</div>
-				</div>
+			<div class="modal-body">
+				<p><b>ID:</b> <span id="modal-id">-1</span></p>
+				<p><b>IGN:</b> "<span  id="modal-ign"></span>"</p>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+				<a id="modal-btn-remove" class="btn btn-danger" href="#" role="button">Remove</a>
 			</div>
 		</div>
-		<script>
-			function copyInput(id) {
-				var elem = document.getElementById(id);
-				elem.select();
-				document.execCommand("copy");
-			}
-			function copyPassword(id) {
-				var elem = document.getElementById(id);
-				elem.type = "text";
-				elem.select();
-				document.execCommand("copy");
-				elem.type = "password";
-			}
-			$('#removeModal').on('show.bs.modal', function (event) {
-				var button = $(event.relatedTarget)
-				var id = button.data('id')
-				var ign = button.data('ign')
-				var modal = $(this)
-				modal.find('#modal-ign').text(ign)
-				modal.find('#modal-id').text(id)
-				modal.find('#modal-btn-remove').attr("href", "/remove/" + id)
-			})
-		</script>
-	</body>
-</html>
+	</div>
+</div>
+<script>
+	function copyInput(id) {
+		var elem = document.getElementById(id);
+		elem.select();
+		document.execCommand("copy");
+	}
+	function copyPassword(id) {
+		var elem = document.getElementById(id);
+		elem.type = "text";
+		elem.select();
+		document.execCommand("copy");
+		elem.type = "password";
+	}
+	$('#removeModal').on('show.bs.modal', function (event) {
+		var button = $(event.relatedTarget)
+		var id = button.data('id')
+		var ign = button.data('ign')
+		var modal = $(this)
+		modal.find('#modal-ign').text(ign)
+		modal.find('#modal-id').text(id)
+		modal.find('#modal-btn-remove').attr("href", "/remove/" + id)
+	})
+</script>
+{{ template "footer" }}
