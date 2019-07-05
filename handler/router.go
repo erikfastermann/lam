@@ -22,22 +22,29 @@ func New(db *db.DB, templates *template.Template) *Handler {
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	url := r.URL.Path
-	status, err := h.router(w, r)
-	if err != nil || status == http.StatusNotFound {
+	addr := r.RemoteAddr
+	var username string
+	var status int
+	var errAuth error
+	var errRoute error
+	user, errAuth := h.checkAuth(r)
+	if errAuth != nil {
+		username = errAuth.Error()
+		status, errRoute = h.router(nil, w, r)
+	} else {
+		username = fmt.Sprintf("%d:%s", user.ID, user.Username)
+		status, errRoute = h.router(user, w, r)
+	}
+	if errRoute != nil || status == http.StatusNotFound {
 		fmt.Fprintf(w, "%d - %s", status, http.StatusText(status))
 	}
-	msg := fmt.Sprintf("%s - %d", url, status)
-	if err != nil {
-		msg += fmt.Sprintf(" - %v", err)
-	}
-	log.Printf(msg)
+	log.Printf("%s|%s|%s|%d|%v", addr, url, username, status, errRoute)
 }
 
-func (h Handler) router(w http.ResponseWriter, r *http.Request) (int, error) {
+func (h Handler) router(user *db.User, w http.ResponseWriter, r *http.Request) (int, error) {
 	var base string
 	base, r.URL.Path = splitURL(r.URL.Path)
-	user, err := h.checkAuth(r)
-	if err != nil {
+	if user == nil {
 		return h.login(w, r)
 	}
 
