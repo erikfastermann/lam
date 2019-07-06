@@ -29,15 +29,11 @@ func (h Handler) edit(user *db.User, w *response, r *http.Request) (int, string,
 		return http.StatusOK, "", nil
 	}
 
-	if err := r.ParseForm(); err != nil {
-		return http.StatusBadRequest, "", fmt.Errorf("edit: couldn't parse form, %v", err)
-	}
-	acc, err := accFromForm(r.PostForm)
+	acc, err := accFromForm(r)
 	if err != nil {
 		return http.StatusBadRequest, "", fmt.Errorf("edit: failed validating form input, %v", err)
 	}
 	err = h.db.EditAccount(id, acc)
-
 	if err != nil {
 		return http.StatusInternalServerError, "", fmt.Errorf("edit: writing account with id %d to database failed, %v", id, err)
 	}

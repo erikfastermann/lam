@@ -3,6 +3,7 @@ package handler
 import (
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"strconv"
 	"time"
@@ -18,17 +19,19 @@ type editPage struct {
 	Account  db.Account
 }
 
-func accFromForm(form url.Values) (*db.Account, error) {
-	acc := new(db.Account)
-
+func accFromForm(r *http.Request) (*db.Account, error) {
+	if err := r.ParseForm(); err != nil {
+		return nil, err
+	}
 	formVal := func(key string) string {
-		val, ok := form[key]
+		val, ok := r.PostForm[key]
 		if !ok {
 			return ""
 		}
 		return val[0]
 	}
 
+	acc := new(db.Account)
 	acc.Region = formVal("region")
 	acc.Tag = formVal("tag")
 	acc.IGN = formVal("ign")

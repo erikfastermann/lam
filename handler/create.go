@@ -19,10 +19,7 @@ func (h Handler) create(user *db.User, w *response, r *http.Request) (int, strin
 		return http.StatusOK, "", nil
 	}
 
-	if err := r.ParseForm(); err != nil {
-		return http.StatusBadRequest, "", fmt.Errorf("create: couldn't parse form, %v", err)
-	}
-	acc, err := accFromForm(r.PostForm)
+	acc, err := accFromForm(r)
 	if err != nil {
 		return http.StatusBadRequest, "", fmt.Errorf("create: failed validating form input, %v", err)
 	}
