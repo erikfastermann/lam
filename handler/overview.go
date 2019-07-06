@@ -8,22 +8,21 @@ import (
 	"github.com/erikfastermann/lam/db"
 )
 
-type account struct {
-	Color  string
-	Banned bool
-	Link   string
-	DB     db.Account
-}
+func (h Handler) overview(user *db.User, w *response, r *http.Request) (int, string, error) {
+	type account struct {
+		Color  string
+		Banned bool
+		Link   string
+		DB     db.Account
+	}
+	type overviewPage struct {
+		Username string
+		Accounts []account
+	}
 
-type accountsPage struct {
-	Username string
-	Accounts []account
-}
-
-func (h Handler) overview(user *db.User, w http.ResponseWriter, r *http.Request) (int, error) {
 	db, err := h.db.Accounts()
 	if err != nil {
-		return http.StatusInternalServerError, fmt.Errorf("overview: couldn't read accounts from database, %v", err)
+		return http.StatusInternalServerError, "", fmt.Errorf("overview: couldn't read accounts from database, %v", err)
 	}
 
 	accs := make([]account, 0)
@@ -52,10 +51,7 @@ func (h Handler) overview(user *db.User, w http.ResponseWriter, r *http.Request)
 		accs = append(accs, account{Color: color, Banned: banned, Link: link, DB: *acc})
 	}
 
-	data := accountsPage{Username: user.Username, Accounts: accs}
-	err = h.templates.ExecuteTemplate(w, "overview.html", data)
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
-	return http.StatusOK, nil
+	data := overviewPage{Username: user.Username, Accounts: accs}
+	h.templates.ExecuteTemplate(w, templateOverview, data)
+	return http.StatusOK, "", nil
 }

@@ -27,8 +27,9 @@ func main() {
 	templateGlob := getenv("LAM_TEMPLATE_GLOB")
 	templates := template.Must(template.ParseGlob(templateGlob))
 
+	l := log.New(os.Stderr, "", log.Ldate|log.Ltime)
+
 	go func() {
-		l := log.New(os.Stderr, "elo: ", log.Ldate|log.Ltime)
 		for range time.NewTicker(time.Hour).C {
 			err := elo.UpdateAll(db, l)
 			if err != nil {
@@ -37,7 +38,7 @@ func main() {
 		}
 	}()
 
-	h := handler.New(db, templates)
+	h := handler.New(db, templates, l)
 	port := getenv("LAM_PORT")
 	if tlsPort := os.Getenv("LAM_HTTPS_PORT"); tlsPort != "" {
 		domain := getenv("LAM_HTTPS_DOMAIN")
