@@ -14,16 +14,16 @@ import (
 func UpdateAll(db *db.DB, l *log.Logger) error {
 	accs, err := db.Accounts()
 	if err != nil {
-		return fmt.Errorf("failed reading accounts from database, %v", err)
+		return fmt.Errorf("elo: failed reading accounts from database, %v", err)
 	}
 	for _, acc := range accs {
 		elo, err := GetElo(acc.Region, acc.IGN)
 		if err != nil {
-			l.Print(err)
+			l.Print(fmt.Errorf("elo: %v", err))
 			continue
 		}
 		if err := db.EditElo(acc.ID, elo); err != nil {
-			l.Printf("couldn't update elo in database (Account-ID: %d), %v", acc.ID, err)
+			l.Printf("elo: couldn't update elo in database (Account-ID: %d), %v", acc.ID, err)
 			continue
 		}
 	}
@@ -36,21 +36,21 @@ func GetElo(region, ign string) (string, error) {
 	}
 	url, err := handler.URLFromIGN(region, ign)
 	if err != nil {
-		return "", fmt.Errorf("couldn't create URL, %v", err)
+		return "", fmt.Errorf("elo: couldn't create URL, %v", err)
 	}
 	res, err := client.Get(url)
 	if err != nil {
-		return "", fmt.Errorf("failed opening URL: %s, %v", url, err)
+		return "", fmt.Errorf("elo: failed opening URL: %s, %v", url, err)
 	}
 	defer res.Body.Close()
 
 	doc, err := goquery.NewDocumentFromReader(res.Body)
 	if err != nil {
-		return "", fmt.Errorf("failed parsing body from %s, %v", url, err)
+		return "", fmt.Errorf("elo: failed parsing body from %s, %v", url, err)
 	}
 	elo := doc.Find(".leagueTier").Text()
 	if elo == "" {
-		return "", fmt.Errorf("couldn't find .leagueTier on %s", url)
+		return "", fmt.Errorf("elo: couldn't find .leagueTier on %s", url)
 	}
 	return elo, nil
 }
