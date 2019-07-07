@@ -22,7 +22,7 @@ func (h Handler) overview(user *db.User, w *response, r *http.Request) (int, str
 
 	db, err := h.db.Accounts()
 	if err != nil {
-		return http.StatusInternalServerError, "", fmt.Errorf("overview: couldn't read accounts from database, %v", err)
+		return http.StatusInternalServerError, "", fmt.Errorf("couldn't read accounts from database, %v", err)
 	}
 
 	accs := make([]account, 0)

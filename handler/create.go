@@ -11,7 +11,7 @@ func (h Handler) create(user *db.User, w *response, r *http.Request) (int, strin
 	if r.Method == http.MethodGet {
 		usernames, err := h.db.Usernames()
 		if err != nil {
-			return http.StatusInternalServerError, "", fmt.Errorf("create: failed querying usernames from database, %v", err)
+			return http.StatusInternalServerError, "", fmt.Errorf("failed querying usernames from database, %v", err)
 		}
 		acc := db.Account{Region: "euw", User: user.Username}
 		data := editPage{Title: "Create new account", Users: usernames, Username: user.Username, Account: acc}
@@ -21,11 +21,11 @@ func (h Handler) create(user *db.User, w *response, r *http.Request) (int, strin
 
 	acc, err := accFromForm(r)
 	if err != nil {
-		return http.StatusBadRequest, "", fmt.Errorf("create: failed validating form input, %v", err)
+		return http.StatusBadRequest, "", fmt.Errorf("failed validating form input, %v", err)
 	}
 	err = h.db.AddAccount(acc)
 	if err != nil {
-		return http.StatusInternalServerError, "", fmt.Errorf("create: writing to database failed, %v", err)
+		return http.StatusInternalServerError, "", fmt.Errorf("writing to database failed, %v", err)
 	}
 	return http.StatusCreated, routeOverview, nil
 }

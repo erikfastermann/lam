@@ -24,24 +24,24 @@ func (h Handler) login(user *db.User, w *response, r *http.Request) (int, string
 	passwordHash := r.FormValue("password")
 	user, err := h.db.User(username)
 	if err != nil {
-		return http.StatusUnauthorized, routeLogin, fmt.Errorf("login: couldn't find user (username: %s) in database, %v", username, err)
+		return http.StatusUnauthorized, routeLogin, fmt.Errorf("couldn't find user (username: %s) in database, %v", username, err)
 	}
 
 	byteHash := []byte(passwordHash)
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), byteHash)
 	if err != nil {
-		return http.StatusUnauthorized, routeLogin, fmt.Errorf("login: username: %s, %v", username, err)
+		return http.StatusUnauthorized, routeLogin, fmt.Errorf("username: %s, %v", username, err)
 	}
 
 	randBytes := make([]byte, 24)
 	_, err = rand.Read(randBytes)
 	if err != nil {
-		return http.StatusInternalServerError, "", fmt.Errorf("login: failed generating random bytes, %v", err)
+		return http.StatusInternalServerError, "", fmt.Errorf("failed generating random bytes, %v", err)
 	}
 	token := base64.URLEncoding.EncodeToString(randBytes)
 	err = h.db.EditToken(user.ID, token)
 	if err != nil {
-		return http.StatusInternalServerError, "", fmt.Errorf("login: couldn't edit token for username: %s, %v", username, err)
+		return http.StatusInternalServerError, "", fmt.Errorf("couldn't edit token for username: %s, %v", username, err)
 	}
 
 	w.cookie = &http.Cookie{
@@ -54,7 +54,7 @@ func (h Handler) login(user *db.User, w *response, r *http.Request) (int, string
 func (h Handler) logout(user *db.User, w *response, r *http.Request) (int, string, error) {
 	err := h.db.EditToken(user.ID, "")
 	if err != nil {
-		return http.StatusInternalServerError, "", fmt.Errorf("logout: couldn't reset token for username: %s, %v", user.Username, err)
+		return http.StatusInternalServerError, "", fmt.Errorf("couldn't reset token for username: %s, %v", user.Username, err)
 	}
 	return http.StatusNoContent, routeLogin, nil
 }
