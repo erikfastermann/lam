@@ -12,7 +12,7 @@ import (
 	"github.com/erikfastermann/lam/db"
 )
 
-var (
+const (
 	templateLogin    = "login.html"
 	templateOverview = "overview.html"
 	templateEdit     = "edit.html"
@@ -93,12 +93,12 @@ func (h Handler) router(user *db.User, authErr error, w *response, r *http.Reque
 		auth bool
 		wrap bool
 	}{
-		{f: h.login, base: routeLogin[1:], id: false, post: true, auth: false},
-		{f: h.logout, base: routeLogout[1:], id: false, post: false, auth: true},
-		{f: h.overview, base: routeOverview[1:], id: false, post: false, auth: true},
-		{f: h.edit, base: routeEdit[1:], id: true, post: true, auth: true},
-		{f: h.create, base: routeCreate[1:], id: false, post: true, auth: true},
-		{f: h.remove, base: routeRemove[1:], id: true, post: false, auth: true},
+		{f: h.login, base: routeLogin, id: false, post: true, auth: false},
+		{f: h.logout, base: routeLogout, id: false, post: false, auth: true},
+		{f: h.overview, base: routeOverview, id: false, post: false, auth: true},
+		{f: h.edit, base: routeEdit, id: true, post: true, auth: true},
+		{f: h.create, base: routeCreate, id: false, post: true, auth: true},
+		{f: h.remove, base: routeRemove, id: true, post: false, auth: true},
 	}
 
 	var base string
@@ -120,11 +120,12 @@ func (h Handler) router(user *db.User, authErr error, w *response, r *http.Reque
 
 func splitURL(url string) (string, string) {
 	url = path.Clean(url)
-	split := strings.Split(url[1:], "/")
+	split := strings.SplitN(url[1:], "/", 2)
+	split[0] = "/" + split[0]
 	if len(split) == 1 {
 		return split[0], "/"
 	}
-	return split[0], "/" + strings.Join(split[1:], "/")
+	return split[0], "/" + split[1]
 }
 
 func (h Handler) checkAuth(r *http.Request) (*db.User, error) {
