@@ -20,38 +20,38 @@
 			<tbody>
 				{{ range .Accounts }}
 				<tr class="{{ .Color }}">
-					<td class="align-middle"><a href="/edit/{{ .DB.ID }}">✏ </a></td>
-					<td class="align-middle">{{ .DB.Region }}</td>
-					<td class="align-middle">{{ if (ne .DB.Tag "") }}<span class="badge badge-primary">{{ .DB.Tag }}</span>{{ end }}{{ if .DB.Leaverbuster }}<span class="badge badge-warning">{{ .DB.Leaverbuster }} min</span>{{ end }}{{ if .DB.Pre30 }}<span class="badge badge-info">Pre 30</span>{{ end }}{{ if and (eq .DB.Ban.Valid true) (eq .Banned false) (eq .DB.PasswordChanged false) }}<span class="badge badge-danger">!</span>{{ end }}{{ if (eq .DB.PasswordChanged true) }}<span class="badge badge-danger">PW</span>{{ end }}</td>
+					<td class="align-middle"><a href="/edit/{{ .ID }}">✏ </a></td>
+					<td class="align-middle">{{ .Region }}</td>
+					<td class="align-middle">{{ if (ne .Tag "") }}<span class="badge badge-primary">{{ .Tag }}</span>{{ end }}{{ if .Leaverbuster }}<span class="badge badge-warning">{{ .Leaverbuster }} min</span>{{ end }}{{ if .Pre30 }}<span class="badge badge-info">Pre 30</span>{{ end }}{{ if and (eq .Ban.Valid true) (eq .Banned false) (eq .PasswordChanged false) }}<span class="badge badge-danger">!</span>{{ end }}{{ if (eq .PasswordChanged true) }}<span class="badge badge-danger">PW</span>{{ end }}</td>
 					<td class="align-middle">
 						<div class="input-group">
-							<input type="text" class="form-control" id="{{ .DB.ID }}_ign" value="{{ .DB.IGN }}" readonly>
+							<input type="text" class="form-control" id="{{ .ID }}_ign" value="{{ .IGN }}" readonly>
 							<div class="input-group-append">
-								<button class="btn btn-outline-secondary" type="button" onclick="copyInput('{{ .DB.ID }}_ign')">📋</button>
+								<button class="btn btn-outline-secondary" type="button" onclick="copyInput('{{ .ID }}_ign')">📋</button>
 							</div>
 						</div>
 					</td>
 					<td class="align-middle">
 						<div class="input-group">
-							<input type="text" class="form-control" id="{{ .DB.ID }}_username" value="{{ .DB.Username }}" readonly>
+							<input type="text" class="form-control" id="{{ .ID }}_username" value="{{ .Username }}" readonly>
 							<div class="input-group-append">
-								<button class="btn btn-outline-secondary" type="button" onclick="copyInput('{{ .DB.ID }}_username')">📋</button>
+								<button class="btn btn-outline-secondary" type="button" onclick="copyInput('{{ .ID }}_username')">📋</button>
 							</div>
 						</div>
 					</td>
 					<td class="align-middle">
 						<div class="input-group">
-							<input type="password" class="form-control" id="{{ .DB.ID }}_password" value="{{ .DB.Password }}" readonly>
+							<input type="password" class="form-control" id="{{ .ID }}_password" value="{{ .Password }}" readonly>
 							<div class="input-group-append">
-								<button class="btn btn-outline-secondary" type="button" onclick="copyPassword('{{ .DB.ID }}_password')">📋</button>
+								<button class="btn btn-outline-secondary" type="button" onclick="copyPassword('{{ .ID }}_password')">📋</button>
 							</div>
 						</div>
 					</td>
-					<td class="align-middle">{{ .DB.User }}</td>
-					{{ $t := .DB.Ban.Time }}
-					<td class="align-middle">{{ if (eq .DB.Perma true) }}Permanent{{ else if (eq .DB.Ban.Valid true) }}{{ printf "%d %s %d %02d:%02d" $t.Day $t.Month $t.Year $t.Hour $t.Minute }}{{ else }}Never{{ end }}</td>
-					<td class="align-middle"><a {{ if (ne .Link "") }}href="{{ .Link }}"{{ end }} target="_blank">{{ .DB.Elo }}</a></td>
-					<td class="align-middle"><button type="button" class="btn btn-link" data-toggle="modal" data-target="#removeModal" data-id="{{ .DB.ID }}" data-ign="{{ .DB.IGN }}">❌</button></td>
+					<td class="align-middle">{{ .User }}</td>
+					{{ $t := .Ban.Time }}
+					<td class="align-middle">{{ if (eq .Perma true) }}Permanent{{ else if (eq .Ban.Valid true) }}{{ printf "%d %s %d %02d:%02d" $t.Day $t.Month $t.Year $t.Hour $t.Minute }}{{ else }}Never{{ end }}</td>
+					<td class="align-middle"><a {{ if (ne .Link "") }}href="{{ .Link }}"{{ end }} target="_blank">{{ .Elo }}</a></td>
+					<td class="align-middle"><button type="button" class="btn btn-link" data-toggle="modal" data-target="#removeModal" data-id="{{ .ID }}" data-ign="{{ .IGN }}">❌</button></td>
 				</tr>
 				{{ end }}
 			</tbody>

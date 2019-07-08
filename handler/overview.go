@@ -13,7 +13,7 @@ func (h Handler) overview(user *db.User, w *response, r *http.Request) (int, str
 		Color  string
 		Banned bool
 		Link   string
-		DB     db.Account
+		db.Account
 	}
 	type overviewPage struct {
 		Username string
@@ -42,7 +42,7 @@ func (h Handler) overview(user *db.User, w *response, r *http.Request) (int, str
 			color = "table-danger"
 		}
 
-		accs = append(accs, account{Color: color, Banned: banned, Link: link, DB: *acc})
+		accs = append(accs, account{color, banned, link, *acc})
 	}
 
 	data := overviewPage{Username: user.Username, Accounts: accs}
