@@ -2,7 +2,10 @@ package db
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"errors"
+	"fmt"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -83,4 +86,31 @@ func (db DB) txExec(query string, args ...interface{}) error {
 		return err
 	}
 	return tx.Commit()
+}
+
+type NullTime struct {
+	Time  time.Time
+	Valid bool
+}
+
+func (nt *NullTime) Scan(value interface{}) error {
+	if value == nil {
+		nt.Time = time.Time{}
+		nt.Valid = false
+		return nil
+	}
+	t, ok := value.(time.Time)
+	if !ok {
+		return fmt.Errorf("%T is not nil or time.Time", value)
+	}
+	nt.Time = t
+	nt.Valid = true
+	return nil
+}
+
+func (nt NullTime) Value() (driver.Value, error) {
+	if nt.Valid {
+		return nt.Time, nil
+	}
+	return nil, nil
 }

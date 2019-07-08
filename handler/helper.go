@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/erikfastermann/lam/db"
-	"github.com/go-sql-driver/mysql"
 )
 
 type editPage struct {
@@ -47,15 +46,13 @@ func accFromForm(r *http.Request) (*db.Account, error) {
 	acc.Leaverbuster = leaverbusterInt
 
 	banForm := formVal("ban")
-	var ban mysql.NullTime
-	if banForm == "" {
-		ban = mysql.NullTime{Valid: false}
-	} else {
-		banTime, err := time.Parse("2006-01-02 15:04", banForm)
+	var ban db.NullTime
+	if banForm != "" {
+		ban.Time, err = time.ParseInLocation("2006-01-02 15:04", banForm, time.Local)
 		if err != nil {
 			return nil, err
 		}
-		ban = mysql.NullTime{Time: banTime, Valid: true}
+		ban.Valid = true
 	}
 	acc.Ban = ban
 

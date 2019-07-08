@@ -1,9 +1,5 @@
 package db
 
-import (
-	"github.com/go-sql-driver/mysql"
-)
-
 type Account struct {
 	ID              int
 	Region          string
@@ -13,7 +9,7 @@ type Account struct {
 	Password        string
 	User            string
 	Leaverbuster    int
-	Ban             mysql.NullTime
+	Ban             NullTime
 	Perma           bool
 	PasswordChanged bool
 	Pre30           bool

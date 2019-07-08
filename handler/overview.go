@@ -30,18 +30,12 @@ func (h Handler) overview(user *db.User, w *response, r *http.Request) (int, str
 		link, _ := URLFromIGN(acc.Region, acc.IGN)
 
 		banned := false
-		if acc.Perma {
+		if acc.Perma || (acc.Ban.Valid && acc.Ban.Time.After(time.Now())) {
 			banned = true
-		} else if acc.Ban.Valid {
-			if acc.Ban.Time.Unix()-time.Now().Unix() > 0 {
-				banned = true
-			}
-		} else {
-			banned = false
 		}
 
 		color := ""
-		if banned && !acc.Perma {
+		if banned {
 			color = "table-warning"
 		}
 		if acc.Perma || acc.PasswordChanged {
