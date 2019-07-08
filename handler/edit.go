@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -35,7 +36,10 @@ func (h Handler) edit(user *db.User, w *response, r *http.Request) (int, string,
 	}
 	err = h.db.EditAccount(id, acc)
 	if err != nil {
-		return http.StatusInternalServerError, "", fmt.Errorf("writing account with id %d to database failed, %v", id, err)
+		if err == sql.ErrNoRows {
+			return http.StatusBadRequest, "", fmt.Errorf("couldn't find account with id %d", id)
+		}
+		return http.StatusInternalServerError, "", fmt.Errorf("writing account with id %d failed, %v", id, err)
 	}
 	return http.StatusNoContent, routeOverview, nil
 }

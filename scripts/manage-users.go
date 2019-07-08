@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"database/sql"
 	"errors"
 	"fmt"
 	"os"
@@ -37,20 +38,14 @@ func main() {
 	case "-a":
 		username := getUsername()
 		password := getPassword()
-		checkErr(err)
-		_, err := db.User(username)
-		if err != nil {
-			checkErr(db.AddUser(username, password))
-			return
-		}
-		checkErr(errors.New("username already exists"))
+		checkErr(db.AddUser(username, password))
 	case "-r":
 		username := getUsername()
-		_, err := db.User(username)
-		if err != nil {
-			checkErr(fmt.Errorf("%v, username doesn't exist", err))
+		err := db.RemoveUser(username)
+		if err == sql.ErrNoRows {
+			checkErr(errors.New("username doesn't exist"))
 		}
-		checkErr(db.RemoveUser(username))
+		checkErr(err)
 	default:
 		usage()
 	}

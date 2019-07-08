@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -13,13 +14,12 @@ func (h Handler) remove(user *db.User, w *response, r *http.Request) (int, strin
 	if err != nil {
 		return http.StatusBadRequest, "", fmt.Errorf("couldn't parse id %s", r.URL.Path[1:])
 	}
-	_, err = h.db.Account(id)
-	if err != nil {
-		return http.StatusBadRequest, "", fmt.Errorf("couldn't find to be removed account with id %d from database, %v", id, err)
-	}
 	err = h.db.RemoveAccount(id)
 	if err != nil {
-		return http.StatusInternalServerError, "", fmt.Errorf("couldn't remove account with id %d from database, %v", id, err)
+		if err == sql.ErrNoRows {
+			return http.StatusBadRequest, "", fmt.Errorf("couldn't find account with id %d", id)
+		}
+		return http.StatusInternalServerError, "", fmt.Errorf("couldn't remove account with id %d, %v", id, err)
 	}
 	return http.StatusNoContent, routeOverview, nil
 }
