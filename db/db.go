@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -21,7 +22,7 @@ func Init(path string) (*DB, error) {
 	}
 
 	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS users (
-		username VARCHAR(24) NOT NULL,
+		username VARCHAR(24) NOT NULL UNIQUE,
 		password VARCHAR(63) NOT NULL,
 		token VARCHAR(60) NOT NULL
 	)`)
@@ -47,4 +48,39 @@ func Init(path string) (*DB, error) {
 	}
 
 	return &DB{db}, nil
+}
+
+func (db DB) txExec(query string, args ...interface{}) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	err = func() error {
+		result, err := tx.Exec(query, args...)
+		if err != nil {
+			return err
+		}
+		rows, err := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+		switch rows {
+		case 0:
+			return sql.ErrNoRows
+		case 1:
+			return nil
+		default:
+			return errors.New("more than 1 row would be affected in a query")
+		}
+	}()
+
+	if err != nil {
+		errRb := tx.Rollback()
+		if errRb != nil {
+			return errRb
+		}
+		return err
+	}
+	return tx.Commit()
 }

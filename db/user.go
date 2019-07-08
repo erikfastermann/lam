@@ -50,17 +50,13 @@ func (db DB) UserByToken(token string) (*User, error) {
 }
 
 func (db DB) AddUser(username, password string) error {
-	_, err := db.Exec(`INSERT INTO users(username, password, token)
-		VALUES(?, ?, '')`, username, password)
-	return err
+	return db.txExec(`INSERT INTO users(username, password, token) VALUES(?, ?, '')`, username, password)
 }
 
 func (db DB) RemoveUser(username string) error {
-	_, err := db.Exec(`DELETE FROM users WHERE username=?`, username)
-	return err
+	return db.txExec(`DELETE FROM users WHERE username=?`, username)
 }
 
 func (db DB) EditToken(id int, token string) error {
-	_, err := db.Exec("UPDATE users SET token=? WHERE _rowid_=?", token, id)
-	return err
+	return db.txExec("UPDATE users SET token=? WHERE _rowid_=?", token, id)
 }

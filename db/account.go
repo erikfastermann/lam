@@ -60,27 +60,23 @@ func (db DB) Accounts() ([]*Account, error) {
 }
 
 func (db DB) AddAccount(acc *Account) error {
-	_, err := db.Exec(`INSERT INTO accounts(region, tag, ign, username,
-	 password, user, leaverbuster, ban, perma, password_changed, pre_30)
+	return db.txExec(`INSERT INTO accounts(region, tag, ign, username,
+		password, user, leaverbuster, ban, perma, password_changed, pre_30)
 		VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, acc.Region, acc.Tag, acc.IGN, acc.Username,
 		acc.Password, acc.User, acc.Leaverbuster, acc.Ban, acc.Perma, acc.PasswordChanged, acc.Pre30)
-	return err
 }
 
 func (db DB) RemoveAccount(id int) error {
-	_, err := db.Exec(`DELETE FROM accounts WHERE _rowid_=?`, id)
-	return err
+	return db.txExec(`DELETE FROM accounts WHERE _rowid_=?`, id)
 }
 
 func (db DB) EditAccount(id int, acc *Account) error {
-	_, err := db.Exec(`UPDATE accounts SET region=?, tag=?, ign=?, username=?, password=?,
+	return db.txExec(`UPDATE accounts SET region=?, tag=?, ign=?, username=?, password=?,
 		user=?, leaverbuster=?, ban=?, perma=?, password_changed=?, pre_30=? WHERE _rowid_=?`,
 		acc.Region, acc.Tag, acc.IGN, acc.Username, acc.Password,
 		acc.User, acc.Leaverbuster, acc.Ban, acc.Perma, acc.PasswordChanged, acc.Pre30, id)
-	return err
 }
 
 func (db DB) EditElo(id int, elo string) error {
-	_, err := db.Exec("UPDATE accounts SET elo=? WHERE _rowid_=?", elo, id)
-	return err
+	return db.txExec("UPDATE accounts SET elo=? WHERE _rowid_=?", elo, id)
 }
