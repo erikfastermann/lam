@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -123,6 +124,9 @@ func Init(path string) (*DB, error) {
 	}
 
 	for key, val := range stmts {
+		if !isSelectStmt(val.query) {
+			continue
+		}
 		stmt, err := db.Prepare(val.query)
 		if err != nil {
 			return nil, err
@@ -135,12 +139,23 @@ func Init(path string) (*DB, error) {
 
 func (db DB) Close() error {
 	for _, val := range db.stmts {
+		if !isSelectStmt(val.query) {
+			continue
+		}
 		err := val.stmt.Close()
 		if err != nil {
 			return err
 		}
 	}
 	return db.handle.Close()
+}
+
+func isSelectStmt(query string) bool {
+	queryFields := strings.Fields(query)
+	if len(queryFields) == 0 || strings.ToUpper(queryFields[0]) != "SELECT" {
+		return false
+	}
+	return true
 }
 
 func (db DB) txExec(sq stmtQuery, args ...interface{}) error {
