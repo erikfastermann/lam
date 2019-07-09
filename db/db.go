@@ -10,8 +10,31 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+type stmtQuery int
+
+const (
+	stmtAccount stmtQuery = iota
+	stmtAccounts
+	stmtAddAccount
+	stmtRemoveAccount
+	stmtEditAccount
+	stmtEditElo
+	stmtUser
+	stmtUsernames
+	stmtUserByToken
+	stmtAddUser
+	stmtRemoveUser
+	stmtEditToken
+)
+
+type prepStmt struct {
+	query string
+	stmt  *sql.Stmt
+}
+
 type DB struct {
-	*sql.DB
+	handle *sql.DB
+	stmts  map[stmtQuery]prepStmt
 }
 
 func Init(path string) (*DB, error) {
@@ -50,17 +73,84 @@ func Init(path string) (*DB, error) {
 		return nil, err
 	}
 
-	return &DB{db}, nil
+	stmts := map[stmtQuery]prepStmt{
+		stmtAccount: prepStmt{
+			query: `SELECT _rowid_, region, tag, ign, username, password, user,
+				leaverbuster, ban, perma, password_changed, pre_30, elo
+				FROM accounts
+				WHERE _rowid_=?`,
+		},
+		stmtAccounts: prepStmt{
+			query: `SELECT _rowid_, region, tag, ign, username, password, user,
+				leaverbuster, ban, perma, password_changed, pre_30, elo
+				FROM accounts
+				ORDER BY password_changed ASC, perma ASC, region ASC, tag ASC`,
+		},
+		stmtAddAccount: prepStmt{
+			query: `INSERT INTO accounts(region, tag, ign, username, password, user,
+				leaverbuster, ban, perma, password_changed, pre_30)
+				VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		},
+		stmtRemoveAccount: prepStmt{
+			query: `DELETE FROM accounts WHERE _rowid_=?`,
+		},
+		stmtEditAccount: prepStmt{
+			query: `UPDATE accounts SET region=?, tag=?, ign=?, username=?, password=?, user=?,
+				leaverbuster=?, ban=?, perma=?, password_changed=?, pre_30=?
+				WHERE _rowid_=?`,
+		},
+		stmtEditElo: prepStmt{
+			query: `UPDATE accounts SET elo=? WHERE _rowid_=?`,
+		},
+		stmtUser: prepStmt{
+			query: `SELECT _rowid_, username, password, token FROM users WHERE username=?`,
+		},
+		stmtUsernames: prepStmt{
+			query: `SELECT username FROM users`,
+		},
+		stmtUserByToken: prepStmt{
+			query: `SELECT _rowid_, username, password, token FROM users WHERE token=?`,
+		},
+		stmtAddUser: prepStmt{
+			query: `INSERT INTO users(username, password, token) VALUES(?, ?, '')`,
+		},
+		stmtRemoveUser: prepStmt{
+			query: `DELETE FROM users WHERE username=?`,
+		},
+		stmtEditToken: prepStmt{
+			query: `UPDATE users SET token=? WHERE _rowid_=?`,
+		},
+	}
+
+	for key, val := range stmts {
+		stmt, err := db.Prepare(val.query)
+		if err != nil {
+			return nil, err
+		}
+		stmts[key] = prepStmt{val.query, stmt}
+	}
+
+	return &DB{db, stmts}, nil
 }
 
-func (db DB) txExec(query string, args ...interface{}) error {
-	tx, err := db.Begin()
+func (db DB) Close() error {
+	for _, val := range db.stmts {
+		err := val.stmt.Close()
+		if err != nil {
+			return err
+		}
+	}
+	return db.handle.Close()
+}
+
+func (db DB) txExec(sq stmtQuery, args ...interface{}) error {
+	tx, err := db.handle.Begin()
 	if err != nil {
 		return err
 	}
 
 	err = func() error {
-		result, err := tx.Exec(query, args...)
+		result, err := tx.Exec(db.stmts[sq].query, args...)
 		if err != nil {
 			return err
 		}

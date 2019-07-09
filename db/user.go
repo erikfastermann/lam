@@ -9,7 +9,7 @@ type User struct {
 
 func (db DB) User(username string) (*User, error) {
 	u := new(User)
-	err := db.QueryRow("SELECT _rowid_, username, password, token FROM users WHERE username=?", username).
+	err := db.stmts[stmtUser].stmt.QueryRow(username).
 		Scan(&u.ID, &u.Username, &u.Password, &u.Token)
 	if err != nil {
 		return nil, err
@@ -18,7 +18,7 @@ func (db DB) User(username string) (*User, error) {
 }
 
 func (db DB) Usernames() ([]string, error) {
-	rows, err := db.Query(`SELECT username FROM users`)
+	rows, err := db.stmts[stmtUsernames].stmt.Query()
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func (db DB) Usernames() ([]string, error) {
 
 func (db DB) UserByToken(token string) (*User, error) {
 	u := new(User)
-	err := db.QueryRow("SELECT _rowid_, username, password, token FROM users WHERE token=?", token).
+	err := db.stmts[stmtUserByToken].stmt.QueryRow(token).
 		Scan(&u.ID, &u.Username, &u.Password, &u.Token)
 	if err != nil {
 		return nil, err
@@ -50,13 +50,13 @@ func (db DB) UserByToken(token string) (*User, error) {
 }
 
 func (db DB) AddUser(username, password string) error {
-	return db.txExec(`INSERT INTO users(username, password, token) VALUES(?, ?, '')`, username, password)
+	return db.txExec(stmtAddUser, username, password)
 }
 
 func (db DB) RemoveUser(username string) error {
-	return db.txExec(`DELETE FROM users WHERE username=?`, username)
+	return db.txExec(stmtRemoveUser, username)
 }
 
 func (db DB) EditToken(id int, token string) error {
-	return db.txExec("UPDATE users SET token=? WHERE _rowid_=?", token, id)
+	return db.txExec(stmtEditToken, token, id)
 }
