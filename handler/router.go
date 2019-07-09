@@ -62,11 +62,16 @@ func (h Handler) handleRequest(w http.ResponseWriter, r *http.Request) (status i
 		http.Redirect(w, r, redirect, http.StatusSeeOther)
 		return
 	}
-	w.WriteHeader(status)
+
 	if handlerErr != nil || status == http.StatusNotFound {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.WriteHeader(status)
 		fmt.Fprintf(w, "%d - %s", status, http.StatusText(status))
 		return
 	}
+
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
 	_, err := resp.buf.WriteTo(w)
 	if err != nil {
 		handlerErr = fmt.Errorf("router: failed writing template, %v", err)
