@@ -91,7 +91,6 @@ func (h Handler) router(user *db.User, authErr error, w *response, r *http.Reque
 		id   bool
 		post bool
 		auth bool
-		wrap bool
 	}{
 		{f: h.login, base: routeLogin, id: false, post: true, auth: false},
 		{f: h.logout, base: routeLogout, id: false, post: false, auth: true},
