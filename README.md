@@ -20,12 +20,12 @@ sudo docker-compose up -d
 
 # Add a User
 
-Add a user with the manage-users.go script by running:
+Add a user with the manage.go script by running:
 
 ```
-cd $GOPATH/src/github.com/erikfastermann/lam/scripts
+cd $GOPATH/src/github.com/erikfastermann/lam/manage
 go get
-go run manage-users.go -a $LAM_DB_PATH
+go run manage.go -a $LAM_DB_PATH
 ```
 
 If you don't supply a path, the default for this docker volume will be used.
