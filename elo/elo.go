@@ -17,7 +17,7 @@ func UpdateAll(db *db.DB, l *log.Logger) error {
 		return fmt.Errorf("elo: failed reading accounts from database, %v", err)
 	}
 	for _, acc := range accs {
-		elo, err := GetElo(acc.Region, acc.IGN)
+		elo, err := Get(acc.Region, acc.IGN)
 		if err != nil {
 			l.Print(fmt.Errorf("elo: %v", err))
 			continue
@@ -30,7 +30,7 @@ func UpdateAll(db *db.DB, l *log.Logger) error {
 	return nil
 }
 
-func GetElo(region, ign string) (string, error) {
+func Get(region, ign string) (string, error) {
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
