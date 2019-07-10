@@ -33,12 +33,14 @@ func main() {
 	l := log.New(os.Stderr, "", log.Ldate|log.Ltime)
 
 	go func() {
-		ctx := context.Background()
-		for range time.NewTicker(time.Hour).C {
-			err := elo.UpdateAll(ctx, db, l)
+		duration := time.Hour
+		for {
+			err := elo.UpdateAll(db)
 			if err != nil {
-				l.Print(err)
+				duration *= 2
+				l.Printf("elo: %v, retrying in %s", err, duration)
 			}
+			time.Sleep(duration)
 		}
 	}()
 
