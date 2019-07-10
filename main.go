@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"html/template"
@@ -18,7 +19,9 @@ import (
 
 func main() {
 	path := getenv("LAM_DB_PATH")
-	db, err := db.Init(path)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	db, err := db.Init(ctx, path)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -30,8 +33,9 @@ func main() {
 	l := log.New(os.Stderr, "", log.Ldate|log.Ltime)
 
 	go func() {
+		ctx := context.Background()
 		for range time.NewTicker(time.Hour).C {
-			err := elo.UpdateAll(db, l)
+			err := elo.UpdateAll(ctx, db, l)
 			if err != nil {
 				l.Print(err)
 			}
@@ -79,9 +83,6 @@ func newServer(port string, h http.Handler) *http.Server {
 	return &http.Server{
 		Addr:           ":" + port,
 		Handler:        h,
-		ReadTimeout:    5 * time.Second,
-		WriteTimeout:   10 * time.Second,
-		IdleTimeout:    120 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
 }

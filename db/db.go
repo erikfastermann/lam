@@ -1,11 +1,11 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"database/sql/driver"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -38,17 +38,17 @@ type DB struct {
 	stmts  map[stmtQuery]prepStmt
 }
 
-func Init(path string) (*DB, error) {
+func Init(ctx context.Context, path string) (*DB, error) {
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {
 		return nil, err
 	}
-	err = db.Ping()
+	err = db.PingContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS users (
+	_, err = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS users (
 		username VARCHAR(24) NOT NULL UNIQUE,
 		password VARCHAR(63) NOT NULL,
 		token VARCHAR(60) NOT NULL
@@ -56,7 +56,7 @@ func Init(path string) (*DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = db.Exec(`CREATE TABLE IF NOT EXISTS accounts (
+	_, err = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS accounts (
 		region varchar(4) NOT NULL,
 		tag varchar(24) NOT NULL,
 		ign varchar(16) NOT NULL,
@@ -124,10 +124,7 @@ func Init(path string) (*DB, error) {
 	}
 
 	for key, val := range stmts {
-		if !isSelectStmt(val.query) {
-			continue
-		}
-		stmt, err := db.Prepare(val.query)
+		stmt, err := db.PrepareContext(ctx, val.query)
 		if err != nil {
 			return nil, err
 		}
@@ -138,34 +135,32 @@ func Init(path string) (*DB, error) {
 }
 
 func (db DB) Close() error {
+	var errStmt error
 	for _, val := range db.stmts {
-		if !isSelectStmt(val.query) {
-			continue
-		}
 		err := val.stmt.Close()
 		if err != nil {
-			return err
+			errStmt = err
 		}
 	}
-	return db.handle.Close()
-}
-
-func isSelectStmt(query string) bool {
-	queryFields := strings.Fields(query)
-	if len(queryFields) == 0 || strings.ToUpper(queryFields[0]) != "SELECT" {
-		return false
+	errHandle := db.handle.Close()
+	if errHandle != nil {
+		return errHandle
 	}
-	return true
+	return errStmt
 }
 
-func (db DB) txExec(sq stmtQuery, args ...interface{}) error {
+func (db DB) txExec(ctx context.Context, sq stmtQuery, args ...interface{}) error {
 	tx, err := db.handle.Begin()
 	if err != nil {
 		return err
 	}
 
 	err = func() error {
-		result, err := tx.Exec(db.stmts[sq].query, args...)
+		stmt := tx.StmtContext(ctx, db.stmts[sq].stmt)
+		if err != nil {
+			return err
+		}
+		result, err := stmt.ExecContext(ctx, args...)
 		if err != nil {
 			return err
 		}

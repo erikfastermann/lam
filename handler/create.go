@@ -1,15 +1,16 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
 	"github.com/erikfastermann/lam/db"
 )
 
-func (h Handler) create(user *db.User, w *response, r *http.Request) (int, string, error) {
+func (h Handler) create(ctx context.Context, user *db.User, w *response, r *http.Request) (int, string, error) {
 	if r.Method == http.MethodGet {
-		usernames, err := h.db.Usernames()
+		usernames, err := h.db.Usernames(ctx)
 		if err != nil {
 			return http.StatusInternalServerError, "", fmt.Errorf("failed querying usernames from database, %v", err)
 		}
@@ -23,7 +24,7 @@ func (h Handler) create(user *db.User, w *response, r *http.Request) (int, strin
 	if err != nil {
 		return http.StatusBadRequest, "", fmt.Errorf("failed validating form input, %v", err)
 	}
-	err = h.db.AddAccount(acc)
+	err = h.db.AddAccount(ctx, acc)
 	if err != nil {
 		return http.StatusInternalServerError, "", fmt.Errorf("writing to database failed, %v", err)
 	}

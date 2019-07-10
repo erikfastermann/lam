@@ -2,12 +2,14 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"html/template"
 	"log"
 	"net/http"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/erikfastermann/lam/db"
 )
@@ -38,10 +40,13 @@ func New(db *db.DB, templates *template.Template, logger *log.Logger) *Handler {
 }
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+	defer cancel()
+
 	url := r.URL.Path
 	addr := r.RemoteAddr
 	var username string
-	status, handlerErr, user, authErr := h.handleRequest(w, r)
+	status, handlerErr, user, authErr := h.handleRequest(ctx, w, r)
 	if authErr != nil {
 		username = authErr.Error()
 	} else {
@@ -50,11 +55,11 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.logger.Printf("%s|%s %s|%s|%d - %s|%v", addr, r.Method, url, username, status, http.StatusText(status), handlerErr)
 }
 
-func (h Handler) handleRequest(w http.ResponseWriter, r *http.Request) (status int, handlerErr error, user *db.User, authErr error) {
-	user, authErr = h.checkAuth(r)
+func (h Handler) handleRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (status int, handlerErr error, user *db.User, authErr error) {
+	user, authErr = h.checkAuth(ctx, r)
 	var redirect string
 	resp := new(response)
-	status, redirect, handlerErr = h.router(user, authErr, resp, r)
+	status, redirect, handlerErr = h.router(ctx, user, authErr, resp, r)
 	if resp.cookie != nil {
 		http.SetCookie(w, resp.cookie)
 	}
@@ -89,9 +94,9 @@ const (
 	routeRemove   = "/remove"
 )
 
-func (h Handler) router(user *db.User, authErr error, w *response, r *http.Request) (int, string, error) {
+func (h Handler) router(ctx context.Context, user *db.User, authErr error, w *response, r *http.Request) (int, string, error) {
 	routes := []struct {
-		f    func(*db.User, *response, *http.Request) (int, string, error)
+		f    func(context.Context, *db.User, *response, *http.Request) (int, string, error)
 		base string
 		id   bool
 		post bool
@@ -117,7 +122,7 @@ func (h Handler) router(user *db.User, authErr error, w *response, r *http.Reque
 		if i.auth && authErr != nil {
 			return http.StatusUnauthorized, routeLogin, nil
 		}
-		return i.f(user, w, r)
+		return i.f(ctx, user, w, r)
 	}
 	return http.StatusNotFound, "", nil
 }
@@ -132,13 +137,13 @@ func splitURL(url string) (string, string) {
 	return split[0], "/" + split[1]
 }
 
-func (h Handler) checkAuth(r *http.Request) (*db.User, error) {
+func (h Handler) checkAuth(ctx context.Context, r *http.Request) (*db.User, error) {
 	c, err := r.Cookie("session_token")
 	if err != nil {
 		return nil, err
 	}
 	token := c.Value
-	user, err := h.db.UserByToken(token)
+	user, err := h.db.UserByToken(ctx, token)
 	if err != nil {
 		return nil, fmt.Errorf("auth: Token %s not found, %v", token, err)
 	}

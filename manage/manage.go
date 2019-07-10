@@ -2,12 +2,14 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
 	"os"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/erikfastermann/lam/db"
 	"golang.org/x/crypto/bcrypt"
@@ -23,25 +25,29 @@ func main() {
 	if len(os.Args) == 3 {
 		dbPath = os.Args[2]
 	}
-	db, err := db.Init(dbPath)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	db, err := db.Init(ctx, dbPath)
 	checkErr(err)
+	defer db.Close()
 
 	switch os.Args[1] {
 	case "-l":
-		usernames, err := db.Usernames()
+		usernames, err := db.Usernames(ctx)
 		checkErr(err)
 		for _, i := range usernames {
-			u, err := db.User(i)
+			u, err := db.User(ctx, i)
 			checkErr(err)
 			fmt.Printf("%d - %s - %s - %s\n", u.ID, u.Username, u.Password, u.Token)
 		}
 	case "-a":
 		username := getUsername()
 		password := getPassword()
-		checkErr(db.AddUser(username, password))
+		checkErr(db.AddUser(ctx, username, password))
 	case "-r":
 		username := getUsername()
-		err := db.RemoveUser(username)
+		err := db.RemoveUser(ctx, username)
 		if err == sql.ErrNoRows {
 			checkErr(errors.New("username doesn't exist"))
 		}

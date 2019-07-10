@@ -1,5 +1,7 @@
 package db
 
+import "context"
+
 type User struct {
 	ID       int
 	Username string
@@ -7,9 +9,9 @@ type User struct {
 	Token    string
 }
 
-func (db DB) User(username string) (*User, error) {
+func (db DB) User(ctx context.Context, username string) (*User, error) {
 	u := new(User)
-	err := db.stmts[stmtUser].stmt.QueryRow(username).
+	err := db.stmts[stmtUser].stmt.QueryRowContext(ctx, username).
 		Scan(&u.ID, &u.Username, &u.Password, &u.Token)
 	if err != nil {
 		return nil, err
@@ -17,8 +19,8 @@ func (db DB) User(username string) (*User, error) {
 	return u, nil
 }
 
-func (db DB) Usernames() ([]string, error) {
-	rows, err := db.stmts[stmtUsernames].stmt.Query()
+func (db DB) Usernames(ctx context.Context) ([]string, error) {
+	rows, err := db.stmts[stmtUsernames].stmt.QueryContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -39,9 +41,9 @@ func (db DB) Usernames() ([]string, error) {
 	return usernames, err
 }
 
-func (db DB) UserByToken(token string) (*User, error) {
+func (db DB) UserByToken(ctx context.Context, token string) (*User, error) {
 	u := new(User)
-	err := db.stmts[stmtUserByToken].stmt.QueryRow(token).
+	err := db.stmts[stmtUserByToken].stmt.QueryRowContext(ctx, token).
 		Scan(&u.ID, &u.Username, &u.Password, &u.Token)
 	if err != nil {
 		return nil, err
@@ -49,14 +51,14 @@ func (db DB) UserByToken(token string) (*User, error) {
 	return u, nil
 }
 
-func (db DB) AddUser(username, password string) error {
-	return db.txExec(stmtAddUser, username, password)
+func (db DB) AddUser(ctx context.Context, username, password string) error {
+	return db.txExec(ctx, stmtAddUser, username, password)
 }
 
-func (db DB) RemoveUser(username string) error {
-	return db.txExec(stmtRemoveUser, username)
+func (db DB) RemoveUser(ctx context.Context, username string) error {
+	return db.txExec(ctx, stmtRemoveUser, username)
 }
 
-func (db DB) EditToken(id int, token string) error {
-	return db.txExec(stmtEditToken, token, id)
+func (db DB) EditToken(ctx context.Context, id int, token string) error {
+	return db.txExec(ctx, stmtEditToken, token, id)
 }

@@ -1,6 +1,7 @@
 package elo
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,8 +12,8 @@ import (
 	"github.com/erikfastermann/lam/handler"
 )
 
-func UpdateAll(db *db.DB, l *log.Logger) error {
-	accs, err := db.Accounts()
+func UpdateAll(ctx context.Context, db *db.DB, l *log.Logger) error {
+	accs, err := db.Accounts(ctx)
 	if err != nil {
 		return fmt.Errorf("elo: failed reading accounts from database, %v", err)
 	}
@@ -22,7 +23,7 @@ func UpdateAll(db *db.DB, l *log.Logger) error {
 			l.Print(fmt.Errorf("elo: %v", err))
 			continue
 		}
-		if err := db.EditElo(acc.ID, elo); err != nil {
+		if err := db.EditElo(ctx, acc.ID, elo); err != nil {
 			l.Printf("elo: couldn't update elo in database (Account-ID: %d), %v", acc.ID, err)
 			continue
 		}

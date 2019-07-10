@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -8,7 +9,7 @@ import (
 	"github.com/erikfastermann/lam/db"
 )
 
-func (h Handler) overview(user *db.User, w *response, r *http.Request) (int, string, error) {
+func (h Handler) overview(ctx context.Context, user *db.User, w *response, r *http.Request) (int, string, error) {
 	type account struct {
 		Color  string
 		Banned bool
@@ -20,7 +21,7 @@ func (h Handler) overview(user *db.User, w *response, r *http.Request) (int, str
 		Accounts []account
 	}
 
-	db, err := h.db.Accounts()
+	db, err := h.db.Accounts(ctx)
 	if err != nil {
 		return http.StatusInternalServerError, "", fmt.Errorf("couldn't read accounts from database, %v", err)
 	}

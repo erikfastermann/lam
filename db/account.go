@@ -1,5 +1,7 @@
 package db
 
+import "context"
+
 type Account struct {
 	ID              int
 	Region          string
@@ -16,9 +18,9 @@ type Account struct {
 	Elo             string
 }
 
-func (db DB) Account(id int) (*Account, error) {
+func (db DB) Account(ctx context.Context, id int) (*Account, error) {
 	acc := new(Account)
-	err := db.stmts[stmtAccount].stmt.QueryRow(id).
+	err := db.stmts[stmtAccount].stmt.QueryRowContext(ctx, id).
 		Scan(&acc.ID, &acc.Region, &acc.Tag, &acc.IGN,
 			&acc.Username, &acc.Password, &acc.User, &acc.Leaverbuster,
 			&acc.Ban, &acc.Perma, &acc.PasswordChanged, &acc.Pre30, &acc.Elo)
@@ -28,8 +30,8 @@ func (db DB) Account(id int) (*Account, error) {
 	return acc, nil
 }
 
-func (db DB) Accounts() ([]*Account, error) {
-	rows, err := db.stmts[stmtAccounts].stmt.Query()
+func (db DB) Accounts(ctx context.Context) ([]*Account, error) {
+	rows, err := db.stmts[stmtAccounts].stmt.QueryContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -52,20 +54,20 @@ func (db DB) Accounts() ([]*Account, error) {
 	return accs, nil
 }
 
-func (db DB) AddAccount(acc *Account) error {
-	return db.txExec(stmtAddAccount, acc.Region, acc.Tag, acc.IGN, acc.Username,
+func (db DB) AddAccount(ctx context.Context, acc *Account) error {
+	return db.txExec(ctx, stmtAddAccount, acc.Region, acc.Tag, acc.IGN, acc.Username,
 		acc.Password, acc.User, acc.Leaverbuster, acc.Ban, acc.Perma, acc.PasswordChanged, acc.Pre30)
 }
 
-func (db DB) RemoveAccount(id int) error {
-	return db.txExec(stmtRemoveAccount, id)
+func (db DB) RemoveAccount(ctx context.Context, id int) error {
+	return db.txExec(ctx, stmtRemoveAccount, id)
 }
 
-func (db DB) EditAccount(id int, acc *Account) error {
-	return db.txExec(stmtEditAccount, acc.Region, acc.Tag, acc.IGN, acc.Username, acc.Password,
+func (db DB) EditAccount(ctx context.Context, id int, acc *Account) error {
+	return db.txExec(ctx, stmtEditAccount, acc.Region, acc.Tag, acc.IGN, acc.Username, acc.Password,
 		acc.User, acc.Leaverbuster, acc.Ban, acc.Perma, acc.PasswordChanged, acc.Pre30, id)
 }
 
-func (db DB) EditElo(id int, elo string) error {
-	return db.txExec(stmtEditElo, elo, id)
+func (db DB) EditElo(ctx context.Context, id int, elo string) error {
+	return db.txExec(ctx, stmtEditElo, elo, id)
 }

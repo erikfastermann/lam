@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net/http"
@@ -9,18 +10,18 @@ import (
 	"github.com/erikfastermann/lam/db"
 )
 
-func (h Handler) edit(user *db.User, w *response, r *http.Request) (int, string, error) {
+func (h Handler) edit(ctx context.Context, user *db.User, w *response, r *http.Request) (int, string, error) {
 	id, err := strconv.Atoi(r.URL.Path[1:])
 	if err != nil {
 		return http.StatusBadRequest, "", fmt.Errorf("couldn't parse id %s", r.URL.Path[1:])
 	}
 
 	if r.Method == http.MethodGet {
-		acc, err := h.db.Account(id)
+		acc, err := h.db.Account(ctx, id)
 		if err != nil {
 			return http.StatusBadRequest, "", fmt.Errorf("couldn't get account with id %d from database, %v", id, err)
 		}
-		usernames, err := h.db.Usernames()
+		usernames, err := h.db.Usernames(ctx)
 		if err != nil {
 			return http.StatusInternalServerError, "", fmt.Errorf("couldn't query usernames from database, %v", err)
 		}
@@ -34,7 +35,7 @@ func (h Handler) edit(user *db.User, w *response, r *http.Request) (int, string,
 	if err != nil {
 		return http.StatusBadRequest, "", fmt.Errorf("failed validating form input, %v", err)
 	}
-	err = h.db.EditAccount(id, acc)
+	err = h.db.EditAccount(ctx, id, acc)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return http.StatusBadRequest, "", fmt.Errorf("couldn't find account with id %d", id)
