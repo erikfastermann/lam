@@ -2,6 +2,7 @@ package elo
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,6 +12,8 @@ import (
 	"github.com/erikfastermann/lam/db"
 	"github.com/erikfastermann/lam/handler"
 )
+
+var ErrNotFound = errors.New("account not found")
 
 func UpdateAll(ctx context.Context, db *db.DB, l *log.Logger) error {
 	accs, err := db.Accounts(ctx)
@@ -35,9 +38,9 @@ func Get(region, ign string) (string, error) {
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
-	url, err := handler.URLFromIGN(region, ign)
-	if err != nil {
-		return "", fmt.Errorf("elo: couldn't create URL, %v", err)
+	url := handler.LeagueOfGraphsURL(region, ign)
+	if url == "" {
+		return "", ErrNotFound
 	}
 	res, err := client.Get(url)
 	if err != nil {

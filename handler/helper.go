@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -84,13 +83,12 @@ func accFromForm(r *http.Request) (*db.Account, error) {
 	return acc, nil
 }
 
-func URLFromIGN(region, ign string) (string, error) {
+func LeagueOfGraphsURL(region, ign string) string {
 	if region == "" || ign == "" {
-		return "", errors.New("ign or region unset")
+		return ""
 	}
-	url, err := url.Parse(fmt.Sprintf("https://www.leagueofgraphs.com/en/summoner/%s/%s", region, ign))
-	if err != nil {
-		return "", err
-	}
-	return url.String(), nil
+	return fmt.Sprintf("https://www.leagueofgraphs.com/en/summoner/%s/%s",
+		url.PathEscape(region),
+		url.PathEscape(ign),
+	)
 }

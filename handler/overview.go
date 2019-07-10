@@ -28,13 +28,10 @@ func (h Handler) overview(ctx context.Context, user *db.User, w *response, r *ht
 
 	accs := make([]account, 0)
 	for _, acc := range db {
-		link, _ := URLFromIGN(acc.Region, acc.IGN)
-
 		banned := false
 		if acc.Perma || (acc.Ban.Valid && acc.Ban.Time.After(time.Now())) {
 			banned = true
 		}
-
 		color := ""
 		if banned {
 			color = "table-warning"
@@ -42,8 +39,7 @@ func (h Handler) overview(ctx context.Context, user *db.User, w *response, r *ht
 		if acc.Perma || acc.PasswordChanged {
 			color = "table-danger"
 		}
-
-		accs = append(accs, account{color, banned, link, *acc})
+		accs = append(accs, account{color, banned, LeagueOfGraphsURL(acc.Region, acc.IGN), *acc})
 	}
 
 	data := overviewPage{Username: user.Username, Accounts: accs}
