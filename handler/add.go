@@ -8,14 +8,14 @@ import (
 	"github.com/erikfastermann/lam/db"
 )
 
-func (h Handler) create(ctx context.Context, user *db.User, w *response, r *http.Request) (int, string, error) {
+func (h Handler) add(ctx context.Context, user *db.User, w *response, r *http.Request) (int, string, error) {
 	if r.Method == http.MethodGet {
 		usernames, err := h.db.Usernames(ctx)
 		if err != nil {
 			return http.StatusInternalServerError, "", fmt.Errorf("failed querying usernames from database, %v", err)
 		}
 		acc := db.Account{Region: "euw", User: user.Username}
-		data := editPage{Title: "Create new account", Users: usernames, Username: user.Username, Account: acc}
+		data := editPage{Title: "Add new account", Users: usernames, Username: user.Username, Account: acc}
 		h.templates.ExecuteTemplate(w, templateEdit, data)
 		return http.StatusOK, "", nil
 	}

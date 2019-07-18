@@ -91,7 +91,7 @@ const (
 	routeLogout   = "/logout"
 	routeOverview = "/"
 	routeEdit     = "/edit"
-	routeCreate   = "/create"
+	routeAdd      = "/add"
 	routeRemove   = "/remove"
 )
 
@@ -107,7 +107,7 @@ func (h Handler) router(ctx context.Context, user *db.User, authErr error, w *re
 		{f: h.logout, base: routeLogout, id: false, post: false, auth: true},
 		{f: h.overview, base: routeOverview, id: false, post: false, auth: true},
 		{f: h.edit, base: routeEdit, id: true, post: true, auth: true},
-		{f: h.create, base: routeCreate, id: false, post: true, auth: true},
+		{f: h.add, base: routeAdd, id: false, post: true, auth: true},
 		{f: h.remove, base: routeRemove, id: true, post: false, auth: true},
 	}
 
