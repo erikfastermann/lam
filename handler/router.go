@@ -32,11 +32,12 @@ func (r *response) Write(p []byte) (int, error) {
 type Handler struct {
 	db        *db.DB
 	templates *template.Template
+	https     bool
 	logger    *log.Logger
 }
 
-func New(db *db.DB, templates *template.Template, logger *log.Logger) *Handler {
-	return &Handler{db: db, templates: templates, logger: logger}
+func New(db *db.DB, templates *template.Template, https bool, logger *log.Logger) *Handler {
+	return &Handler{db: db, templates: templates, https: https, logger: logger}
 }
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {

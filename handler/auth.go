@@ -46,8 +46,12 @@ func (h Handler) login(ctx context.Context, user *db.User, w *response, r *http.
 	}
 
 	w.cookie = &http.Cookie{
-		Name:  "session_token",
-		Value: token,
+		Name:     "session_token",
+		Value:    token,
+		Path:     "/",
+		Secure:   h.https,
+		HttpOnly: true,
+		SameSite: http.SameSiteStrictMode,
 	}
 	return http.StatusNoContent, routeOverview, nil
 }
