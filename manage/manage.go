@@ -58,7 +58,7 @@ func main() {
 }
 
 func usage() {
-	fmt.Fprintln(os.Stderr, `USAGE: `+os.Args[0]+` COMMAND DATABASE-PATH
+	fmt.Fprintln(os.Stderr, `USAGE: `+os.Args[0]+` COMMAND [DATABASE_PATH]
 	-l	list all users with id, username, password-hash and session-cookie
 	-a	add a user, username and password are read from STDIN
 	-r	remove users by username (read from STDIN)`)
