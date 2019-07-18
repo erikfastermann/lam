@@ -17,12 +17,12 @@ import (
 )
 
 func main() {
-	if len(os.Args) > 3 {
-		usage()
-	}
-
 	dbPath := "/var/lib/docker/volumes/lam_db/_data/lam.db"
-	if len(os.Args) == 3 {
+	switch len(os.Args) {
+	default:
+		usage()
+	case 2:
+	case 3:
 		dbPath = os.Args[2]
 	}
 
