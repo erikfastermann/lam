@@ -71,6 +71,9 @@ func (h Handler) handleRequest(ctx context.Context, w http.ResponseWriter, r *ht
 	}
 
 	header := w.Header()
+	header.Add("Referrer-Policy", "no-referrer")
+	header.Add("X-Frame-Options", "DENY")
+	header.Add("X-Content-Type-Options", "nosniff")
 	if h.HTTPS {
 		header.Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 	}
