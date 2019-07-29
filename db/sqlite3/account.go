@@ -8,7 +8,7 @@ import (
 
 func (sqlDB DB) Account(ctx context.Context, id int) (*db.Account, error) {
 	acc := new(db.Account)
-	err := sqlDB.stmts[stmtAccount].stmt.QueryRowContext(ctx, id).
+	err := sqlDB.stmts[stmtAccount].QueryRowContext(ctx, id).
 		Scan(&acc.ID, &acc.Region, &acc.Tag, &acc.IGN,
 			&acc.Username, &acc.Password, &acc.User, &acc.Leaverbuster,
 			&acc.Ban, &acc.Perma, &acc.PasswordChanged, &acc.Pre30, &acc.Elo)
@@ -19,7 +19,7 @@ func (sqlDB DB) Account(ctx context.Context, id int) (*db.Account, error) {
 }
 
 func (sqlDB DB) Accounts(ctx context.Context) ([]*db.Account, error) {
-	rows, err := sqlDB.stmts[stmtAccounts].stmt.QueryContext(ctx)
+	rows, err := sqlDB.stmts[stmtAccounts].QueryContext(ctx)
 	if err != nil {
 		return nil, err
 	}

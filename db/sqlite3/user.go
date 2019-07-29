@@ -8,7 +8,7 @@ import (
 
 func (sqlDB DB) User(ctx context.Context, username string) (*db.User, error) {
 	u := new(db.User)
-	err := sqlDB.stmts[stmtUser].stmt.QueryRowContext(ctx, username).
+	err := sqlDB.stmts[stmtUser].QueryRowContext(ctx, username).
 		Scan(&u.ID, &u.Username, &u.Password, &u.Token)
 	if err != nil {
 		return nil, err
@@ -17,7 +17,7 @@ func (sqlDB DB) User(ctx context.Context, username string) (*db.User, error) {
 }
 
 func (sqlDB DB) Usernames(ctx context.Context) ([]string, error) {
-	rows, err := sqlDB.stmts[stmtUsernames].stmt.QueryContext(ctx)
+	rows, err := sqlDB.stmts[stmtUsernames].QueryContext(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +40,7 @@ func (sqlDB DB) Usernames(ctx context.Context) ([]string, error) {
 
 func (sqlDB DB) UserByToken(ctx context.Context, token string) (*db.User, error) {
 	u := new(db.User)
-	err := sqlDB.stmts[stmtUserByToken].stmt.QueryRowContext(ctx, token).
+	err := sqlDB.stmts[stmtUserByToken].QueryRowContext(ctx, token).
 		Scan(&u.ID, &u.Username, &u.Password, &u.Token)
 	if err != nil {
 		return nil, err

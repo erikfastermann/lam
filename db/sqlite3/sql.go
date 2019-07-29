@@ -26,14 +26,9 @@ const (
 	stmtEditToken
 )
 
-type prepStmt struct {
-	query string
-	stmt  *sql.Stmt
-}
-
 type DB struct {
 	handle *sql.DB
-	stmts  map[stmtQuery]prepStmt
+	stmts  map[stmtQuery]*sql.Stmt
 }
 
 func Init(ctx context.Context, path string) (db.DB, error) {
@@ -72,61 +67,41 @@ func Init(ctx context.Context, path string) (db.DB, error) {
 		return nil, err
 	}
 
-	stmts := map[stmtQuery]prepStmt{
-		stmtAccount: prepStmt{
-			query: `SELECT _rowid_, region, tag, ign, username, password, user,
-				leaverbuster, ban, perma, password_changed, pre_30, elo
-				FROM accounts
-				WHERE _rowid_=?`,
-		},
-		stmtAccounts: prepStmt{
-			query: `SELECT _rowid_, region, tag, ign, username, password, user,
-				leaverbuster, ban, perma, password_changed, pre_30, elo
-				FROM accounts
-				ORDER BY password_changed ASC, perma ASC, region ASC, tag ASC`,
-		},
-		stmtAddAccount: prepStmt{
-			query: `INSERT INTO accounts(region, tag, ign, username, password, user,
-				leaverbuster, ban, perma, password_changed, pre_30)
-				VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		},
-		stmtRemoveAccount: prepStmt{
-			query: `DELETE FROM accounts WHERE _rowid_=?`,
-		},
-		stmtEditAccount: prepStmt{
-			query: `UPDATE accounts SET region=?, tag=?, ign=?, username=?, password=?, user=?,
-				leaverbuster=?, ban=?, perma=?, password_changed=?, pre_30=?
-				WHERE _rowid_=?`,
-		},
-		stmtEditElo: prepStmt{
-			query: `UPDATE accounts SET elo=? WHERE _rowid_=?`,
-		},
-		stmtUser: prepStmt{
-			query: `SELECT _rowid_, username, password, token FROM users WHERE username=?`,
-		},
-		stmtUsernames: prepStmt{
-			query: `SELECT username FROM users`,
-		},
-		stmtUserByToken: prepStmt{
-			query: `SELECT _rowid_, username, password, token FROM users WHERE token=?`,
-		},
-		stmtAddUser: prepStmt{
-			query: `INSERT INTO users(username, password, token) VALUES(?, ?, '')`,
-		},
-		stmtRemoveUser: prepStmt{
-			query: `DELETE FROM users WHERE username=?`,
-		},
-		stmtEditToken: prepStmt{
-			query: `UPDATE users SET token=? WHERE _rowid_=?`,
-		},
+	queries := []struct {
+		sq  stmtQuery
+		str string
+	}{
+		{stmtAccount, `SELECT _rowid_, region, tag, ign, username, password, user,
+			leaverbuster, ban, perma, password_changed, pre_30, elo
+			FROM accounts
+			WHERE _rowid_=?`},
+		{stmtAccounts, `SELECT _rowid_, region, tag, ign, username, password, user,
+			leaverbuster, ban, perma, password_changed, pre_30, elo
+			FROM accounts
+			ORDER BY password_changed ASC, perma ASC, region ASC, tag ASC`},
+		{stmtAddAccount, `INSERT INTO accounts(region, tag, ign, username, password, user,
+			leaverbuster, ban, perma, password_changed, pre_30)
+			VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`},
+		{stmtRemoveAccount, `DELETE FROM accounts WHERE _rowid_=?`},
+		{stmtEditAccount, `UPDATE accounts SET region=?, tag=?, ign=?, username=?, password=?, user=?,
+			leaverbuster=?, ban=?, perma=?, password_changed=?, pre_30=?
+			WHERE _rowid_=?`},
+		{stmtEditElo, `UPDATE accounts SET elo=? WHERE _rowid_=?`},
+		{stmtUser, `SELECT _rowid_, username, password, token FROM users WHERE username=?`},
+		{stmtUsernames, `SELECT username FROM users`},
+		{stmtUserByToken, `SELECT _rowid_, username, password, token FROM users WHERE token=?`},
+		{stmtAddUser, `INSERT INTO users(username, password, token) VALUES(?, ?, '')`},
+		{stmtRemoveUser, `DELETE FROM users WHERE username=?`},
+		{stmtEditToken, `UPDATE users SET token=? WHERE _rowid_=?`},
 	}
 
-	for key, val := range stmts {
-		stmt, err := db.PrepareContext(ctx, val.query)
+	stmts := make(map[stmtQuery]*sql.Stmt, 0)
+	for _, query := range queries {
+		stmt, err := db.PrepareContext(ctx, query.str)
 		if err != nil {
 			return nil, err
 		}
-		stmts[key] = prepStmt{val.query, stmt}
+		stmts[query.sq] = stmt
 	}
 
 	return &DB{db, stmts}, nil
@@ -134,8 +109,8 @@ func Init(ctx context.Context, path string) (db.DB, error) {
 
 func (db DB) Close() error {
 	var errStmt error
-	for _, val := range db.stmts {
-		err := val.stmt.Close()
+	for _, stmt := range db.stmts {
+		err := stmt.Close()
 		if err != nil {
 			errStmt = err
 		}
@@ -154,7 +129,7 @@ func (db DB) txExec(ctx context.Context, sq stmtQuery, args ...interface{}) erro
 	}
 
 	err = func() error {
-		stmt := tx.StmtContext(ctx, db.stmts[sq].stmt)
+		stmt := tx.StmtContext(ctx, db.stmts[sq])
 		if err != nil {
 			return err
 		}
