@@ -64,19 +64,25 @@ func (h Handler) handleRequest(ctx context.Context, w http.ResponseWriter, r *ht
 	if resp.cookie != nil {
 		http.SetCookie(w, resp.cookie)
 	}
+
+	header := w.Header()
+	if h.https {
+		header.Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
+	}
+
 	if redirect != "" {
 		http.Redirect(w, r, redirect, http.StatusSeeOther)
 		return
 	}
 
 	if handlerErr != nil || status == http.StatusNotFound {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		header.Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(status)
 		fmt.Fprintf(w, "%d - %s", status, http.StatusText(status))
 		return
 	}
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	header.Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
 	_, err := resp.buf.WriteTo(w)
 	if err != nil {
