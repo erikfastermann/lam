@@ -30,7 +30,7 @@ func (r *response) Write(p []byte) (int, error) {
 }
 
 type Handler struct {
-	DB        *db.DB
+	DB        db.DB
 	Templates *template.Template
 	HTTPS     bool
 	Logger    *log.Logger

@@ -14,7 +14,7 @@ import (
 
 var ErrNotFound = errors.New("account not found")
 
-func UpdateAll(db *db.DB) error {
+func UpdateAll(db db.DB) error {
 	ctx := context.TODO()
 	accs, err := db.Accounts(ctx)
 	if err != nil {

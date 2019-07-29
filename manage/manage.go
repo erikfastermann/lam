@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/erikfastermann/lam/db"
+	"github.com/erikfastermann/lam/db/sqlite3"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -28,7 +28,7 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	db, err := db.Init(ctx, dbPath)
+	db, err := sqlite3.Init(ctx, dbPath)
 	checkErr(err)
 	defer db.Close()
 

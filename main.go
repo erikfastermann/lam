@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/erikfastermann/lam/db"
+	"github.com/erikfastermann/lam/db/sqlite3"
 	"github.com/erikfastermann/lam/elo"
 	"github.com/erikfastermann/lam/handler"
 )
@@ -21,7 +21,7 @@ func main() {
 	path := getenv("LAM_DB_PATH")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	db, err := db.Init(ctx, path)
+	db, err := sqlite3.Init(ctx, path)
 	if err != nil {
 		log.Fatal(err)
 	}
