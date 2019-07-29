@@ -21,7 +21,7 @@ func (h Handler) overview(ctx context.Context, user *db.User, w *response, r *ht
 		Accounts []account
 	}
 
-	db, err := h.db.Accounts(ctx)
+	db, err := h.DB.Accounts(ctx)
 	if err != nil {
 		return http.StatusInternalServerError, "", fmt.Errorf("couldn't read accounts from database, %v", err)
 	}
@@ -43,6 +43,6 @@ func (h Handler) overview(ctx context.Context, user *db.User, w *response, r *ht
 	}
 
 	data := overviewPage{Username: user.Username, Accounts: accs}
-	h.templates.ExecuteTemplate(w, templateOverview, data)
+	h.Templates.ExecuteTemplate(w, templateOverview, data)
 	return http.StatusOK, "", nil
 }

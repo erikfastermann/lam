@@ -15,7 +15,7 @@ func (h Handler) remove(ctx context.Context, user *db.User, w *response, r *http
 	if err != nil {
 		return http.StatusBadRequest, "", fmt.Errorf("couldn't parse id %s", r.URL.Path[1:])
 	}
-	err = h.db.RemoveAccount(ctx, id)
+	err = h.DB.RemoveAccount(ctx, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return http.StatusBadRequest, "", fmt.Errorf("couldn't find account with id %d", id)

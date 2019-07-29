@@ -30,17 +30,20 @@ func (r *response) Write(p []byte) (int, error) {
 }
 
 type Handler struct {
-	db        *db.DB
-	templates *template.Template
-	https     bool
-	logger    *log.Logger
-}
-
-func New(db *db.DB, templates *template.Template, https bool, logger *log.Logger) *Handler {
-	return &Handler{db: db, templates: templates, https: https, logger: logger}
+	DB        *db.DB
+	Templates *template.Template
+	HTTPS     bool
+	Logger    *log.Logger
 }
 
 func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if h.DB == nil {
+		panic("db is nil")
+	}
+	if h.Templates == nil {
+		panic("templates is nil")
+	}
+
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
 
@@ -53,7 +56,9 @@ func (h Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	} else {
 		username = fmt.Sprintf("%d:%s", user.ID, user.Username)
 	}
-	h.logger.Printf("%s|%s %s|%s|%d - %s|%v", addr, r.Method, url, username, status, http.StatusText(status), handlerErr)
+	if h.Logger != nil {
+		h.Logger.Printf("%s|%s %s|%s|%d - %s|%v", addr, r.Method, url, username, status, http.StatusText(status), handlerErr)
+	}
 }
 
 func (h Handler) handleRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (status int, handlerErr error, user *db.User, authErr error) {
@@ -66,7 +71,7 @@ func (h Handler) handleRequest(ctx context.Context, w http.ResponseWriter, r *ht
 	}
 
 	header := w.Header()
-	if h.https {
+	if h.HTTPS {
 		header.Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 	}
 
@@ -150,7 +155,7 @@ func (h Handler) checkAuth(ctx context.Context, r *http.Request) (*db.User, erro
 		return nil, err
 	}
 	token := c.Value
-	user, err := h.db.UserByToken(ctx, token)
+	user, err := h.DB.UserByToken(ctx, token)
 	if err != nil {
 		return nil, fmt.Errorf("auth: Token %s not found, %v", token, err)
 	}

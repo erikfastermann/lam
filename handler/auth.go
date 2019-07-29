@@ -17,13 +17,13 @@ func (h Handler) login(ctx context.Context, user *db.User, w *response, r *http.
 	}
 
 	if r.Method == http.MethodGet {
-		h.templates.ExecuteTemplate(w, templateLogin, nil)
+		h.Templates.ExecuteTemplate(w, templateLogin, nil)
 		return http.StatusUnauthorized, "", nil
 	}
 
 	username := r.FormValue("username")
 	passwordHash := r.FormValue("password")
-	user, err := h.db.User(ctx, username)
+	user, err := h.DB.User(ctx, username)
 	if err != nil {
 		return http.StatusUnauthorized, routeLogin, fmt.Errorf("couldn't find user (username: %s) in database, %v", username, err)
 	}
@@ -40,7 +40,7 @@ func (h Handler) login(ctx context.Context, user *db.User, w *response, r *http.
 		return http.StatusInternalServerError, "", fmt.Errorf("failed generating random bytes, %v", err)
 	}
 	token := base64.URLEncoding.EncodeToString(randBytes)
-	err = h.db.EditToken(ctx, user.ID, token)
+	err = h.DB.EditToken(ctx, user.ID, token)
 	if err != nil {
 		return http.StatusInternalServerError, "", fmt.Errorf("couldn't edit token for username: %s, %v", username, err)
 	}
@@ -49,7 +49,7 @@ func (h Handler) login(ctx context.Context, user *db.User, w *response, r *http.
 		Name:     "session_token",
 		Value:    token,
 		Path:     "/",
-		Secure:   h.https,
+		Secure:   h.HTTPS,
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
 	}
@@ -57,7 +57,7 @@ func (h Handler) login(ctx context.Context, user *db.User, w *response, r *http.
 }
 
 func (h Handler) logout(ctx context.Context, user *db.User, w *response, r *http.Request) (int, string, error) {
-	err := h.db.EditToken(ctx, user.ID, "")
+	err := h.DB.EditToken(ctx, user.ID, "")
 	if err != nil {
 		return http.StatusInternalServerError, "", fmt.Errorf("couldn't reset token for username: %s, %v", user.Username, err)
 	}

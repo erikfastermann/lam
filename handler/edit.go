@@ -17,17 +17,17 @@ func (h Handler) edit(ctx context.Context, user *db.User, w *response, r *http.R
 	}
 
 	if r.Method == http.MethodGet {
-		acc, err := h.db.Account(ctx, id)
+		acc, err := h.DB.Account(ctx, id)
 		if err != nil {
 			return http.StatusBadRequest, "", fmt.Errorf("couldn't get account with id %d from database, %v", id, err)
 		}
-		usernames, err := h.db.Usernames(ctx)
+		usernames, err := h.DB.Usernames(ctx)
 		if err != nil {
 			return http.StatusInternalServerError, "", fmt.Errorf("couldn't query usernames from database, %v", err)
 		}
 		title := fmt.Sprintf("Edit: %s", strconv.Quote(acc.IGN))
 		data := editPage{Title: title, Users: usernames, Username: user.Username, Account: *acc}
-		h.templates.ExecuteTemplate(w, templateEdit, data)
+		h.Templates.ExecuteTemplate(w, templateEdit, data)
 		return http.StatusOK, "", nil
 	}
 
@@ -35,7 +35,7 @@ func (h Handler) edit(ctx context.Context, user *db.User, w *response, r *http.R
 	if err != nil {
 		return http.StatusBadRequest, "", fmt.Errorf("failed validating form input, %v", err)
 	}
-	err = h.db.EditAccount(ctx, id, acc)
+	err = h.DB.EditAccount(ctx, id, acc)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return http.StatusBadRequest, "", fmt.Errorf("couldn't find account with id %d", id)

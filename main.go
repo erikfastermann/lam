@@ -44,9 +44,15 @@ func main() {
 		}
 	}()
 
+	h := handler.Handler{
+		DB:        db,
+		Templates: templates,
+		Logger:    l,
+	}
+
 	port := getenv("LAM_PORT")
 	if tlsPort := os.Getenv("LAM_HTTPS_PORT"); tlsPort != "" {
-		h := handler.New(db, templates, true, l)
+		h.HTTPS = true
 		domain := getenv("LAM_HTTPS_DOMAIN")
 		go func() {
 			srv := newServer(port, redirectToHTTPS(domain, tlsPort))
@@ -68,7 +74,6 @@ func main() {
 		return
 	}
 
-	h := handler.New(db, templates, false, l)
 	srv := newServer(port, h)
 	log.Printf("server: listening on port %s (http)", port)
 	log.Fatal(srv.ListenAndServe())
