@@ -21,6 +21,7 @@ func UpdateAll(db db.DB) error {
 		return fmt.Errorf("failed reading accounts from database, %v", err)
 	}
 	for _, acc := range accs {
+		time.Sleep(time.Second)
 		elo, err := Get(acc.Region, acc.IGN)
 		if err != nil {
 			if err == ErrNotFound {
