@@ -123,16 +123,7 @@ func (db DB) Close() error {
 }
 
 func (db DB) txExec(ctx context.Context, sq stmtQuery, args ...interface{}) error {
-	tx, err := db.handle.Begin()
-	if err != nil {
-		return err
-	}
-
-	err = func() error {
-		stmt := tx.StmtContext(ctx, db.stmts[sq])
-		if err != nil {
-			return err
-		}
+	return db.asTx(ctx, sq, func(stmt *sql.Stmt) error {
 		result, err := stmt.ExecContext(ctx, args...)
 		if err != nil {
 			return err
@@ -149,9 +140,16 @@ func (db DB) txExec(ctx context.Context, sq stmtQuery, args ...interface{}) erro
 		default:
 			return errors.New("more than 1 row would be affected in a query")
 		}
-	}()
+	})
+}
 
+func (db DB) asTx(ctx context.Context, sq stmtQuery, f func(*sql.Stmt) error) error {
+	tx, err := db.handle.BeginTx(ctx, nil)
 	if err != nil {
+		return err
+	}
+	stmt := tx.StmtContext(ctx, db.stmts[sq])
+	if err := f(stmt); err != nil {
 		errRb := tx.Rollback()
 		if errRb != nil {
 			return errRb
