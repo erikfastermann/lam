@@ -24,13 +24,13 @@ func (sqlDB DB) Usernames(ctx context.Context) ([]string, error) {
 	defer rows.Close()
 
 	usernames := make([]string, 0)
-	username := new(string)
 	for rows.Next() {
-		err := rows.Scan(username)
+		var username string
+		err := rows.Scan(&username)
 		if err != nil {
 			return nil, err
 		}
-		usernames = append(usernames, *username)
+		usernames = append(usernames, username)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
