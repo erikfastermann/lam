@@ -32,16 +32,16 @@ type DB struct {
 }
 
 func Init(ctx context.Context, path string) (db.DB, error) {
-	db, err := sql.Open("sqlite3", path)
+	sqlDB, err := sql.Open("sqlite3", path)
 	if err != nil {
 		return nil, err
 	}
-	err = db.PingContext(ctx)
+	err = sqlDB.PingContext(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS users (
+	_, err = sqlDB.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS users (
 		username VARCHAR(24) NOT NULL UNIQUE,
 		password VARCHAR(63) NOT NULL,
 		token VARCHAR(60) NOT NULL
@@ -49,7 +49,7 @@ func Init(ctx context.Context, path string) (db.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = db.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS accounts (
+	_, err = sqlDB.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS accounts (
 		region varchar(4) NOT NULL,
 		tag varchar(24) NOT NULL,
 		ign varchar(16) NOT NULL,
@@ -97,33 +97,33 @@ func Init(ctx context.Context, path string) (db.DB, error) {
 
 	stmts := make(map[stmtQuery]*sql.Stmt, 0)
 	for _, query := range queries {
-		stmt, err := db.PrepareContext(ctx, query.str)
+		stmt, err := sqlDB.PrepareContext(ctx, query.str)
 		if err != nil {
 			return nil, err
 		}
 		stmts[query.sq] = stmt
 	}
 
-	return &DB{db, stmts}, nil
+	return &DB{sqlDB, stmts}, nil
 }
 
-func (db DB) Close() error {
+func (sqlDB DB) Close() error {
 	var errStmt error
-	for _, stmt := range db.stmts {
+	for _, stmt := range sqlDB.stmts {
 		err := stmt.Close()
 		if err != nil {
 			errStmt = err
 		}
 	}
-	errHandle := db.handle.Close()
+	errHandle := sqlDB.handle.Close()
 	if errHandle != nil {
 		return errHandle
 	}
 	return errStmt
 }
 
-func (db DB) txExec(ctx context.Context, sq stmtQuery, args ...interface{}) error {
-	return db.asTx(ctx, sq, func(stmt *sql.Stmt) error {
+func (sqlDB DB) txExec(ctx context.Context, sq stmtQuery, args ...interface{}) error {
+	return sqlDB.asTx(ctx, sq, func(stmt *sql.Stmt) error {
 		result, err := stmt.ExecContext(ctx, args...)
 		if err != nil {
 			return err
@@ -143,12 +143,12 @@ func (db DB) txExec(ctx context.Context, sq stmtQuery, args ...interface{}) erro
 	})
 }
 
-func (db DB) asTx(ctx context.Context, sq stmtQuery, f func(*sql.Stmt) error) error {
-	tx, err := db.handle.BeginTx(ctx, nil)
+func (sqlDB DB) asTx(ctx context.Context, sq stmtQuery, f func(*sql.Stmt) error) error {
+	tx, err := sqlDB.handle.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	stmt := tx.StmtContext(ctx, db.stmts[sq])
+	stmt := tx.StmtContext(ctx, sqlDB.stmts[sq])
 	if err := f(stmt); err != nil {
 		errRb := tx.Rollback()
 		if errRb != nil {
