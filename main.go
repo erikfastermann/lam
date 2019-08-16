@@ -44,7 +44,7 @@ func main() {
 		}
 	}()
 
-	h := handler.Handler{
+	h := &handler.Handler{
 		DB:        db,
 		Templates: templates,
 		Logger:    l,

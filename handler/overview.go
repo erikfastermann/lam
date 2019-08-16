@@ -9,7 +9,7 @@ import (
 	"github.com/erikfastermann/lam/db"
 )
 
-func (h Handler) overview(ctx context.Context, user *db.User, w *response, r *http.Request) (int, string, error) {
+func (h *Handler) overview(ctx context.Context, user *db.User, w *response, r *http.Request) (int, string, error) {
 	type account struct {
 		Color  string
 		Banned bool

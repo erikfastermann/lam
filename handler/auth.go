@@ -11,7 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (h Handler) login(ctx context.Context, user *db.User, w *response, r *http.Request) (int, string, error) {
+func (h *Handler) login(ctx context.Context, user *db.User, w *response, r *http.Request) (int, string, error) {
 	if user != nil {
 		return http.StatusSeeOther, routeOverview, nil
 	}
@@ -56,7 +56,7 @@ func (h Handler) login(ctx context.Context, user *db.User, w *response, r *http.
 	return http.StatusNoContent, routeOverview, nil
 }
 
-func (h Handler) logout(ctx context.Context, user *db.User, w *response, r *http.Request) (int, string, error) {
+func (h *Handler) logout(ctx context.Context, user *db.User, w *response, r *http.Request) (int, string, error) {
 	err := h.DB.EditToken(ctx, user.ID, "")
 	if err != nil {
 		return http.StatusInternalServerError, "", fmt.Errorf("couldn't reset token for username: %s, %v", user.Username, err)

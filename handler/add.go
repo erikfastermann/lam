@@ -8,7 +8,7 @@ import (
 	"github.com/erikfastermann/lam/db"
 )
 
-func (h Handler) add(ctx context.Context, user *db.User, w *response, r *http.Request) (int, string, error) {
+func (h *Handler) add(ctx context.Context, user *db.User, w *response, r *http.Request) (int, string, error) {
 	if r.Method == http.MethodGet {
 		usernames, err := h.DB.Usernames(ctx)
 		if err != nil {
