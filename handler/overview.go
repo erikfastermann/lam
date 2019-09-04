@@ -9,7 +9,7 @@ import (
 	"github.com/erikfastermann/lam/db"
 )
 
-func (h *Handler) overview(ctx context.Context, user *db.User, w *response, r *http.Request) (int, string, error) {
+func (h *Handler) overview(ctx context.Context, user *db.User, w http.ResponseWriter, r *http.Request) error {
 	type account struct {
 		Color  string
 		Banned bool
@@ -23,7 +23,7 @@ func (h *Handler) overview(ctx context.Context, user *db.User, w *response, r *h
 
 	db, err := h.DB.Accounts(ctx)
 	if err != nil {
-		return http.StatusInternalServerError, "", fmt.Errorf("couldn't read accounts from database, %v", err)
+		return fmt.Errorf("couldn't read accounts from database, %v", err)
 	}
 
 	accs := make([]account, 0)
@@ -43,6 +43,5 @@ func (h *Handler) overview(ctx context.Context, user *db.User, w *response, r *h
 	}
 
 	data := overviewPage{Username: user.Username, Accounts: accs}
-	h.Templates.ExecuteTemplate(w, templateOverview, data)
-	return http.StatusOK, "", nil
+	return h.Templates.ExecuteTemplate(w, templateOverview, data)
 }

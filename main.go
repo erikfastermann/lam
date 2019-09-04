@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/erikfastermann/httpwrap"
 	"github.com/erikfastermann/lam/db/sqlite3"
 	"github.com/erikfastermann/lam/elo"
 	"github.com/erikfastermann/lam/handler"
@@ -44,15 +45,13 @@ func main() {
 		}
 	}()
 
-	h := &handler.Handler{
+	h := httpwrap.LogCustom(httpwrap.HandleError(&handler.Handler{
 		DB:        db,
 		Templates: templates,
-		Logger:    l,
-	}
+	}), l)
 
 	port := getenv("LAM_PORT")
 	if tlsPort := os.Getenv("LAM_HTTPS_PORT"); tlsPort != "" {
-		h.HTTPS = true
 		domain := getenv("LAM_HTTPS_DOMAIN")
 		go func() {
 			srv := newServer(port, redirectToHTTPS(domain, tlsPort))

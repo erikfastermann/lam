@@ -7,20 +7,28 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/erikfastermann/httpwrap"
 	"github.com/erikfastermann/lam/db"
 )
 
-func (h *Handler) remove(ctx context.Context, user *db.User, w *response, r *http.Request) (int, string, error) {
+func (h *Handler) remove(ctx context.Context, user *db.User, w http.ResponseWriter, r *http.Request) error {
 	id, err := strconv.Atoi(r.URL.Path[1:])
 	if err != nil {
-		return http.StatusBadRequest, "", fmt.Errorf("couldn't parse id %s", r.URL.Path[1:])
+		return httpwrap.Error{
+			StatusCode: http.StatusBadRequest,
+			Err:        fmt.Errorf("couldn't parse id %s", r.URL.Path[1:]),
+		}
 	}
 	err = h.DB.RemoveAccount(ctx, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return http.StatusBadRequest, "", fmt.Errorf("couldn't find account with id %d", id)
+			return httpwrap.Error{
+				StatusCode: http.StatusBadRequest,
+				Err:        fmt.Errorf("couldn't find account with id %d", id),
+			}
 		}
-		return http.StatusInternalServerError, "", fmt.Errorf("couldn't remove account with id %d, %v", id, err)
+		return fmt.Errorf("couldn't remove account with id %d, %v", id, err)
 	}
-	return http.StatusNoContent, routeOverview, nil
+	http.Redirect(w, r, routeOverview, http.StatusSeeOther)
+	return nil
 }

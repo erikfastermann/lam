@@ -1,17 +1,17 @@
 package handler
 
 import (
-	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"html/template"
-	"log"
 	"net/http"
 	"path"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/erikfastermann/httpwrap"
 	"github.com/erikfastermann/lam/db"
 )
 
@@ -30,15 +30,6 @@ const (
 	templateEdit     = "edit.html"
 )
 
-type response struct {
-	buf    bytes.Buffer
-	cookie *http.Cookie
-}
-
-func (r *response) Write(p []byte) (int, error) {
-	return r.buf.Write(p)
-}
-
 type route struct {
 	remain  bool
 	methods []handlerMethod
@@ -50,42 +41,49 @@ type handlerMethod struct {
 	hf     handlerFunc
 }
 
-type handlerFunc func(context.Context, *db.User, *response, *http.Request) (int, string, error)
+type handlerFunc func(context.Context, *db.User, http.ResponseWriter, *http.Request) error
 
 type Handler struct {
 	DB        db.DB
 	Templates *template.Template
-	HTTPS     bool
-	Logger    *log.Logger
 	routes    map[string]route
 	once      sync.Once
 }
 
-func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 	h.once.Do(h.buildRoutes)
-
-	if h.DB == nil {
-		panic("db is nil")
-	}
-	if h.Templates == nil {
-		panic("templates is nil")
-	}
 
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
 
-	url := r.URL.Path
-	addr := r.RemoteAddr
-	var username string
-	status, handlerErr, user, authErr := h.handleRequest(ctx, w, r)
-	if authErr != nil {
-		username = authErr.Error()
-	} else {
-		username = fmt.Sprintf("%d:%s", user.ID, user.Username)
+	header := w.Header()
+	header.Add("Referrer-Policy", "no-referrer")
+	header.Add("X-Frame-Options", "DENY")
+	header.Add("X-Content-Type-Options", "nosniff")
+	if r.URL.Scheme == "https" {
+		header.Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 	}
-	if h.Logger != nil {
-		h.Logger.Printf("%s|%s %s|%s|%d - %s|%v", addr, r.Method, url, username, status, http.StatusText(status), handlerErr)
+
+	var base string
+	base, r.URL.Path = splitURL(r.URL.Path)
+
+	rt, ok := h.routes[base]
+	if !ok || rt.remain != (r.URL.Path != "/") {
+		return httpwrap.Error{StatusCode: http.StatusNotFound, Err: errors.New("unknown route")}
 	}
+
+	user, err := h.checkAuth(ctx, r)
+	if err != nil && rt.auth {
+		http.Redirect(w, r, routeLogin, http.StatusSeeOther)
+		return err
+	}
+
+	for _, m := range rt.methods {
+		if m.method == r.Method {
+			return m.hf(ctx, user, w, r)
+		}
+	}
+	return httpwrap.Error{StatusCode: http.StatusMethodNotAllowed, Err: errors.New("bad method")}
 }
 
 func (h *Handler) buildRoutes() {
@@ -136,66 +134,6 @@ func (h *Handler) buildRoutes() {
 			true,
 		},
 	}
-}
-
-func (h *Handler) handleRequest(ctx context.Context, w http.ResponseWriter, r *http.Request) (status int, handlerErr error, user *db.User, authErr error) {
-	user, authErr = h.checkAuth(ctx, r)
-	var redirect string
-	resp := new(response)
-	status, redirect, handlerErr = h.router(ctx, user, authErr, resp, r)
-	if resp.cookie != nil {
-		http.SetCookie(w, resp.cookie)
-	}
-
-	header := w.Header()
-	header.Add("Referrer-Policy", "no-referrer")
-	header.Add("X-Frame-Options", "DENY")
-	header.Add("X-Content-Type-Options", "nosniff")
-	if h.HTTPS {
-		header.Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
-	}
-
-	if redirect != "" {
-		http.Redirect(w, r, redirect, http.StatusSeeOther)
-		return
-	}
-
-	if handlerErr != nil || status == http.StatusNotFound {
-		header.Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(status)
-		fmt.Fprintf(w, "%d - %s", status, http.StatusText(status))
-		return
-	}
-
-	header.Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(status)
-	_, err := resp.buf.WriteTo(w)
-	if err != nil {
-		handlerErr = fmt.Errorf("router: failed writing template, %v", err)
-		return
-	}
-	return
-}
-
-func (h *Handler) router(ctx context.Context, user *db.User, authErr error, w *response, r *http.Request) (int, string, error) {
-	var base string
-	base, r.URL.Path = splitURL(r.URL.Path)
-
-	rt, ok := h.routes[base]
-	if !ok || rt.remain != (r.URL.Path != "/") {
-		return http.StatusNotFound, "", nil
-	}
-
-	if rt.auth && authErr != nil {
-		return http.StatusUnauthorized, routeLogin, nil
-	}
-
-	for _, m := range rt.methods {
-		if m.method == r.Method {
-			return m.hf(ctx, user, w, r)
-		}
-	}
-	return http.StatusMethodNotAllowed, "", nil
 }
 
 func splitURL(url string) (string, string) {

@@ -5,28 +5,32 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/erikfastermann/httpwrap"
 	"github.com/erikfastermann/lam/db"
 )
 
-func (h *Handler) add(ctx context.Context, user *db.User, w *response, r *http.Request) (int, string, error) {
+func (h *Handler) add(ctx context.Context, user *db.User, w http.ResponseWriter, r *http.Request) error {
 	if r.Method == http.MethodGet {
 		usernames, err := h.DB.Usernames(ctx)
 		if err != nil {
-			return http.StatusInternalServerError, "", fmt.Errorf("failed querying usernames from database, %v", err)
+			return fmt.Errorf("failed querying usernames from database, %v", err)
 		}
 		acc := db.Account{Region: "euw", User: user.Username}
 		data := editPage{Title: "Add new account", Users: usernames, Username: user.Username, Account: acc}
-		h.Templates.ExecuteTemplate(w, templateEdit, data)
-		return http.StatusOK, "", nil
+		return h.Templates.ExecuteTemplate(w, templateEdit, data)
 	}
 
 	acc, err := accFromForm(r)
 	if err != nil {
-		return http.StatusBadRequest, "", fmt.Errorf("failed validating form input, %v", err)
+		return httpwrap.Error{
+			StatusCode: http.StatusBadRequest,
+			Err:        fmt.Errorf("failed validating form input, %v", err),
+		}
 	}
 	err = h.DB.AddAccount(ctx, acc)
 	if err != nil {
-		return http.StatusInternalServerError, "", fmt.Errorf("writing to database failed, %v", err)
+		return fmt.Errorf("writing to database failed, %v", err)
 	}
-	return http.StatusCreated, routeOverview, nil
+	http.Redirect(w, r, routeOverview, http.StatusSeeOther)
+	return nil
 }
