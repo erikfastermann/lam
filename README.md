@@ -41,8 +41,8 @@ To activate HTTPS, comment out and adjust the following in the docker-compose.ym
 ```
 
 ```yaml
-LAM_HTTPS_DOMAIN: 'your-domain.com'
-LAM_HTTPS_PORT: '443'
+LAM_HTTPS_DOMAIN: 'https://your-domain.com'
+LAM_HTTPS_ADDRESS: ':443'
 LAM_HTTPS_CERTS: '/var/lam/keypairs/cert-file1,/var/lam/keypairs/cert-file2'
 LAM_HTTPS_KEYS: '/var/lam/keypairs/key-file1,/var/lam/keypairs/key-file2'
 ```
@@ -54,18 +54,18 @@ Redirecting to HTTPS will not work otherwise.
 
 ## List of environment variables
 
-Port (e.g.: 8080): `LAM_PORT`
+Address (e.g.: ':80'): `LAM_ADDRESS`
 
-Template Glob (e.g.: template/*): `LAM_TEMPLATE_GLOB`
+Template Glob (e.g.: 'template/*'): `LAM_TEMPLATE_GLOB`
 
-Sqlite3 DB Path (e.g.: /lam.db): `LAM_DB_PATH`
+Sqlite3 DB Path (e.g.: '/lam.db'): `LAM_DB_PATH`
 
 ### HTTPS
 
-Domain (used for redirecting): `LAM_HTTPS_DOMAIN`
+Domain (used to upgrade from HTTP to HTTPS): `LAM_HTTPS_DOMAIN`
 
-Port (set to activate): `LAM_HTTPS_PORT`
+Address (set to activate): `LAM_HTTPS_ADDRESS`
 
-Cert files (eg.: path/to/cert-file,path/to/another/cert-file): `LAM_HTTPS_CERTS`
+Cert files (eg.: 'path/to/cert-file,path/to/another/cert-file'): `LAM_HTTPS_CERTS`
 
-Key files (eg.: path/to/key-file,path/to/another/key-file): `LAM_HTTPS_KEYS`
+Key files (eg.: 'path/to/key-file,path/to/another/key-file'): `LAM_HTTPS_KEYS`

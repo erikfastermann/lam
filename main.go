@@ -6,7 +6,6 @@ import (
 	"errors"
 	"html/template"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -50,31 +49,31 @@ func main() {
 		Templates: templates,
 	}), l)
 
-	port := getenv("LAM_PORT")
-	if tlsPort := os.Getenv("LAM_HTTPS_PORT"); tlsPort != "" {
-		domain := getenv("LAM_HTTPS_DOMAIN")
+	addr := getenv("LAM_ADDRESS")
+	if tlsAddr := os.Getenv("LAM_HTTPS_ADDRESS"); tlsAddr != "" {
+		url := getenv("LAM_HTTPS_DOMAIN")
 		go func() {
-			srv := newServer(port, redirectToHTTPS(domain, tlsPort))
+			srv := newServer(addr, redirectToHTTPS(url, l))
 			log.Fatal(srv.ListenAndServe())
 		}()
-		srv := newServer(tlsPort, h)
+
+		srv := newServer(tlsAddr, h)
 		var err error
 		srv.TLSConfig, err = newTLSConfig(getenv("LAM_HTTPS_CERTS"), getenv("LAM_HTTPS_KEYS"))
 		if err != nil {
 			log.Fatal(err)
 		}
-		listener, err := tls.Listen("tcp", ":"+tlsPort, srv.TLSConfig)
+		listener, err := tls.Listen("tcp", tlsAddr, srv.TLSConfig)
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Printf("server: listening on port %s (https)", tlsPort)
-		log.Printf("server: redirecting http (port: %s) to https", port)
+		log.Printf("server: listening on address %s (https)", tlsAddr)
+		log.Printf("server: redirecting http (address: %s) to https", addr)
 		log.Fatal(srv.Serve(listener))
-		return
 	}
 
-	srv := newServer(port, h)
-	log.Printf("server: listening on port %s (http)", port)
+	srv := newServer(addr, h)
+	log.Printf("server: listening on address %s (http)", addr)
 	log.Fatal(srv.ListenAndServe())
 }
 
@@ -86,9 +85,9 @@ func getenv(env string) string {
 	return str
 }
 
-func newServer(port string, h http.Handler) *http.Server {
+func newServer(addr string, h http.Handler) *http.Server {
 	return &http.Server{
-		Addr:           ":" + port,
+		Addr:           addr,
 		Handler:        h,
 		MaxHeaderBytes: 1 << 20,
 	}
@@ -118,13 +117,9 @@ func newTLSConfig(certFiles, keyFiles string) (*tls.Config, error) {
 	return tlsConfig, nil
 }
 
-func redirectToHTTPS(host, tlsPort string) http.HandlerFunc {
+func redirectToHTTPS(url string, l *log.Logger) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		u := r.URL
-		u.Host = net.JoinHostPort(host, tlsPort)
-		u.Scheme = "https"
-		urlStr := u.String()
-		http.Redirect(w, r, urlStr, http.StatusMovedPermanently)
-		log.Printf("redirect: %s to %s (https)", r.URL.Path, urlStr)
+		http.Redirect(w, r, url, http.StatusMovedPermanently)
+		l.Printf("redirect %s to %s", r.URL.Path, url)
 	}
 }
