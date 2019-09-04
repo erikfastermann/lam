@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"errors"
-	"fmt"
 	"html/template"
 	"net/http"
 	"path"
@@ -30,28 +29,28 @@ const (
 	templateEdit     = "edit.html"
 )
 
-type route struct {
-	remain  bool
-	methods []handlerMethod
-	auth    bool
+var errBadMethod = httpwrap.Error{
+	StatusCode: http.StatusMethodNotAllowed,
+	Err:        errors.New("bad method"),
 }
 
-type handlerMethod struct {
-	method string
-	hf     handlerFunc
+type route struct {
+	remain  bool
+	methods []string
+	hf      handlerFunc
 }
 
 type handlerFunc func(context.Context, *db.User, http.ResponseWriter, *http.Request) error
 
 type Handler struct {
-	DB        db.DB
-	Templates *template.Template
-	routes    map[string]route
-	once      sync.Once
+	DB              db.DB
+	Templates       *template.Template
+	protectedRoutes map[string]route
+	once            sync.Once
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
-	h.once.Do(h.buildRoutes)
+	h.once.Do(h.buildProtectedRoutes)
 
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
@@ -64,74 +63,73 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
 		header.Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 	}
 
-	var base string
-	base, r.URL.Path = splitURL(r.URL.Path)
-
-	rt, ok := h.routes[base]
-	if !ok || rt.remain != (r.URL.Path != "/") {
-		return httpwrap.Error{StatusCode: http.StatusNotFound, Err: errors.New("unknown route")}
+	user, isFatal, err := h.checkAuth(ctx, r)
+	if path.Clean(r.URL.Path) == routeLogin {
+		if r.Method != http.MethodGet && r.Method != http.MethodPost {
+			return errBadMethod
+		}
+		return h.login(ctx, user, w, r)
 	}
-
-	user, err := h.checkAuth(ctx, r)
-	if err != nil && rt.auth {
-		http.Redirect(w, r, routeLogin, http.StatusSeeOther)
+	if err != nil {
+		if !isFatal {
+			http.Redirect(w, r, routeLogin, http.StatusSeeOther)
+		}
 		return err
 	}
 
-	for _, m := range rt.methods {
-		if m.method == r.Method {
-			return m.hf(ctx, user, w, r)
-		}
+	fn, err := h.router(r)
+	if err != nil {
+		return err
 	}
-	return httpwrap.Error{StatusCode: http.StatusMethodNotAllowed, Err: errors.New("bad method")}
+	return fn(ctx, user, w, r)
 }
 
-func (h *Handler) buildRoutes() {
-	h.routes = map[string]route{
-		routeLogin: {
-			false,
-			[]handlerMethod{
-				{http.MethodGet, h.login},
-				{http.MethodPost, h.login},
-			},
-			false,
-		},
+func (h *Handler) router(r *http.Request) (handlerFunc, error) {
+	var base string
+	base, r.URL.Path = splitURL(r.URL.Path)
+
+	rt, ok := h.protectedRoutes[base]
+	if !ok || rt.remain != (r.URL.Path != "/") {
+		return nil, httpwrap.Error{
+			StatusCode: http.StatusNotFound,
+			Err:        errors.New("unknown route"),
+		}
+	}
+
+	for _, method := range rt.methods {
+		if method == r.Method {
+			return rt.hf, nil
+		}
+	}
+	return nil, errBadMethod
+}
+
+func (h *Handler) buildProtectedRoutes() {
+	h.protectedRoutes = map[string]route{
 		routeLogout: {
 			false,
-			[]handlerMethod{
-				{http.MethodGet, h.logout},
-			},
-			true,
+			[]string{http.MethodGet},
+			h.logout,
 		},
 		routeOverview: {
 			false,
-			[]handlerMethod{
-				{http.MethodGet, h.overview},
-			},
-			true,
+			[]string{http.MethodGet},
+			h.overview,
 		},
 		routeAdd: {
 			false,
-			[]handlerMethod{
-				{http.MethodGet, h.add},
-				{http.MethodPost, h.add},
-			},
-			true,
+			[]string{http.MethodGet, http.MethodPost},
+			h.add,
 		},
 		routeEdit: {
 			true,
-			[]handlerMethod{
-				{http.MethodGet, h.edit},
-				{http.MethodPost, h.edit},
-			},
-			true,
+			[]string{http.MethodGet, http.MethodPost},
+			h.edit,
 		},
 		routeRemove: {
 			true,
-			[]handlerMethod{
-				{http.MethodGet, h.remove},
-			},
-			true,
+			[]string{http.MethodGet},
+			h.remove,
 		},
 	}
 }
@@ -144,17 +142,4 @@ func splitURL(url string) (string, string) {
 		return split[0], "/"
 	}
 	return split[0], "/" + split[1]
-}
-
-func (h *Handler) checkAuth(ctx context.Context, r *http.Request) (*db.User, error) {
-	c, err := r.Cookie("session_token")
-	if err != nil {
-		return nil, err
-	}
-	token := c.Value
-	user, err := h.DB.UserByToken(ctx, token)
-	if err != nil {
-		return nil, fmt.Errorf("auth: Token %s not found, %v", token, err)
-	}
-	return user, nil
 }

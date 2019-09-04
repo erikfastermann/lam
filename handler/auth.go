@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -12,6 +13,23 @@ import (
 	"github.com/erikfastermann/lam/db"
 	"golang.org/x/crypto/bcrypt"
 )
+
+func (h *Handler) checkAuth(ctx context.Context, r *http.Request) (*db.User, bool, error) {
+	c, err := r.Cookie("session_token")
+	if err != nil {
+		return nil, false, fmt.Errorf("auth: failed reading cookie, %v", err)
+	}
+
+	token := c.Value
+	user, err := h.DB.UserByToken(ctx, token)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, false, fmt.Errorf("auth: token %s not found in database", token)
+		}
+		return nil, true, err
+	}
+	return user, false, nil
+}
 
 func (h *Handler) login(ctx context.Context, user *db.User, w http.ResponseWriter, r *http.Request) error {
 	errUnauthorized := httpwrap.Error{
