@@ -54,18 +54,18 @@ Redirecting to HTTPS will not work otherwise.
 
 ## List of environment variables
 
-Port (e.g.: 8080): LAM_PORT
+Port (e.g.: 8080): `LAM_PORT`
 
-Template Glob (e.g.: template/*): LAM_TEMPLATE_GLOB
+Template Glob (e.g.: template/*): `LAM_TEMPLATE_GLOB`
 
-Sqlite3 DB Path (e.g.: /lam.db): LAM_DB_PATH
+Sqlite3 DB Path (e.g.: /lam.db): `LAM_DB_PATH`
 
 ### HTTPS
 
-Domain (used for redirecting): LAM_HTTPS_DOMAIN
+Domain (used for redirecting): `LAM_HTTPS_DOMAIN`
 
-Port (set to activate): LAM_HTTPS_PORT
+Port (set to activate): `LAM_HTTPS_PORT`
 
-Cert files (eg.: path/to/cert-file,path/to/another/cert-file): LAM_HTTPS_CERTS
+Cert files (eg.: path/to/cert-file,path/to/another/cert-file): `LAM_HTTPS_CERTS`
 
-Key files (eg.: path/to/key-file,path/to/another/key-file): LAM_HTTPS_KEYS
+Key files (eg.: path/to/key-file,path/to/another/key-file): `LAM_HTTPS_KEYS`
