@@ -43,8 +43,7 @@ To activate HTTPS, comment out and adjust the following in the docker-compose.ym
 ```yaml
 LAM_HTTPS_DOMAIN: 'https://your-domain.com'
 LAM_HTTPS_ADDRESS: ':443'
-LAM_HTTPS_CERTS: '/var/lam/keypairs/cert-file1,/var/lam/keypairs/cert-file2'
-LAM_HTTPS_KEYS: '/var/lam/keypairs/key-file1,/var/lam/keypairs/key-file2'
+LAM_HTTPS_CERT_KEYS: '/var/lam/keypairs/cert-file:/var/lam/keypairs/key-file'
 ```
 
 NOTE: Don't use different ports for inside and outside the container.
@@ -62,10 +61,8 @@ Sqlite3 DB Path (e.g.: '/lam.db'): `LAM_DB_PATH`
 
 ### HTTPS
 
-Domain (used to upgrade from HTTP to HTTPS): `LAM_HTTPS_DOMAIN`
-
 Address (set to activate): `LAM_HTTPS_ADDRESS`
 
-Cert files (eg.: 'path/to/cert-file,path/to/another/cert-file'): `LAM_HTTPS_CERTS`
+Cert and Key files (eg.: './cert-file1:./key-file1,./cert-file2:./key-file2'): `LAM_HTTPS_CERT_KEYS`
 
-Key files (eg.: 'path/to/key-file,path/to/another/key-file'): `LAM_HTTPS_KEYS`
+Domain (used to upgrade from HTTP to HTTPS): `LAM_HTTPS_DOMAIN`
