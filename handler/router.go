@@ -49,7 +49,7 @@ type Handler struct {
 	once            sync.Once
 }
 
-func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) error {
+func (h *Handler) ServeHTTPWithErr(w http.ResponseWriter, r *http.Request) error {
 	h.once.Do(h.buildProtectedRoutes)
 
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
