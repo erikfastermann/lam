@@ -95,7 +95,7 @@ func Init(ctx context.Context, path string) (db.DB, error) {
 		{stmtEditToken, `UPDATE users SET token=? WHERE _rowid_=?`},
 	}
 
-	stmts := make(map[stmtQuery]*sql.Stmt, 0)
+	stmts := make(map[stmtQuery]*sql.Stmt)
 	for _, query := range queries {
 		stmt, err := sqlDB.PrepareContext(ctx, query.str)
 		if err != nil {
