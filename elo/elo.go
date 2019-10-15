@@ -61,7 +61,7 @@ func Get(region, ign string) (string, error) {
 			return "", z.Err()
 		case html.StartTagToken:
 			t := z.Token()
-			if t.Data == "span" {
+			if t.Data == "div" {
 				for _, attr := range t.Attr {
 					if attr.Key == "class" && attr.Val == "leagueTier" {
 						if tt := z.Next(); tt != html.TextToken {
