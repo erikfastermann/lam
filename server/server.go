@@ -114,11 +114,12 @@ func ListenAndServe(ctx context.Context, config Config, logger *log.Logger) erro
 
 	go func() {
 		duration := time.Hour
+		l := log.New(os.Stderr, "ERROR ", log.LstdFlags)
 		for {
 			err := elo.UpdateAll(h.DB)
 			if err != nil {
 				duration *= 2
-				logger.Printf("elo: %v, retrying in %s", err, duration)
+				l.Printf("elo: %v, retrying in %s", err, duration)
 			}
 			time.Sleep(duration)
 		}
