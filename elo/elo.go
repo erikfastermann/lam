@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/erikfastermann/lam/db"
@@ -58,16 +59,16 @@ func Get(region, ign string) (string, error) {
 		tt := z.Next()
 		switch tt {
 		case html.ErrorToken:
-			return "", z.Err()
+			return "", fmt.Errorf("parsing error, %v", z.Err())
 		case html.StartTagToken:
 			t := z.Token()
-			if t.Data == "div" {
+			if t.Data == "div" || t.Data == "span" {
 				for _, attr := range t.Attr {
 					if attr.Key == "class" && attr.Val == "leagueTier" {
 						if tt := z.Next(); tt != html.TextToken {
-							return "", errors.New("parsing error")
+							return "", errors.New("parsing error, structure changed")
 						}
-						return z.Token().Data, nil
+						return strings.TrimSpace(z.Token().Data), nil
 					}
 				}
 			}
