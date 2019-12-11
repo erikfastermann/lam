@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"html/template"
+	"log"
 	"net/http"
+	"os"
 	"path"
 	"strings"
 	"sync"
@@ -45,12 +47,21 @@ type handlerFunc func(context.Context, *db.User, http.ResponseWriter, *http.Requ
 type Handler struct {
 	DB              db.DB
 	Templates       *template.Template
-	protectedRoutes map[string]route
 	once            sync.Once
+	logger          *log.Logger
+	protectedRoutes map[string]route
 }
 
 func (h *Handler) ServeHTTPWithErr(w http.ResponseWriter, r *http.Request) error {
-	h.once.Do(h.buildProtectedRoutes)
+	err := h.serve(w, r)
+	if httpwrap.IsErrorInternal(err) {
+		h.logger.Print(err)
+	}
+	return err
+}
+
+func (h *Handler) serve(w http.ResponseWriter, r *http.Request) error {
+	h.once.Do(h.setup)
 
 	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 	defer cancel()
@@ -104,7 +115,8 @@ func (h *Handler) router(r *http.Request) (handlerFunc, error) {
 	return nil, errBadMethod
 }
 
-func (h *Handler) buildProtectedRoutes() {
+func (h *Handler) setup() {
+	h.logger = log.New(os.Stderr, "ERROR ", log.LstdFlags)
 	h.protectedRoutes = map[string]route{
 		routeLogout: {
 			false,
