@@ -3,6 +3,7 @@ package csvdb
 import (
 	"context"
 	"database/sql"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -41,7 +42,6 @@ func (d *DB) Account(ctx context.Context, id int) (*db.Account, error) {
 	return nil, sql.ErrNoRows
 }
 
-// TODO: ORDER BY password_changed ASC, perma ASC, region ASC, tag ASC
 func (d *DB) Accounts(ctx context.Context) ([]*db.Account, error) {
 	records, err := d.accs.all(ctx)
 	if err != nil {
@@ -55,6 +55,42 @@ func (d *DB) Accounts(ctx context.Context) ([]*db.Account, error) {
 		}
 		accs = append(accs, a)
 	}
+
+	less := []func(i, j *db.Account) bool{
+		func(i, j *db.Account) bool {
+			if i.PasswordChanged == j.PasswordChanged {
+				return false
+			}
+			return j.PasswordChanged
+		},
+		func(i, j *db.Account) bool {
+			if i.Perma == j.Perma {
+				return false
+			}
+			return j.Perma
+		},
+		func(i, j *db.Account) bool {
+			return i.Region < j.Region
+		},
+		func(i, j *db.Account) bool {
+			return i.Tag < j.Tag
+		},
+	}
+	sort.Slice(accs, func(i, j int) bool {
+		p, q := accs[i], accs[j]
+		var k int
+		for k = 0; k < len(less)-1; k++ {
+			l := less[k]
+			switch {
+			case l(p, q):
+				return true
+			case l(q, p):
+				return false
+			}
+		}
+		return less[k](p, q)
+	})
+
 	return accs, nil
 }
 
