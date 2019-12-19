@@ -13,15 +13,23 @@ import (
 	"time"
 
 	"github.com/erikfastermann/httpwrap"
+	"github.com/erikfastermann/lam/db/csvdb"
 	"github.com/erikfastermann/lam/db/sqlite3"
 	"github.com/erikfastermann/lam/elo"
 	"github.com/erikfastermann/lam/handler"
 )
 
 type Config struct {
-	DBPath        string
-	TemplateGlob  string
-	Address       string
+	DBPath string
+
+	CSVDBUsers    string
+	CSVDBAccounts string
+	CSVDBCtr      string
+
+	TemplateGlob string
+
+	Address string
+
 	HTTPS         bool
 	HTTPSAddress  string
 	HTTPSDomain   string
@@ -42,12 +50,22 @@ func ConfigFromEnv(prefix string) (Config, error) {
 	var config Config
 
 	err := getenv(prefix,
-		entry{"DB_PATH", &config.DBPath},
 		entry{"TEMPLATE_GLOB", &config.TemplateGlob},
 		entry{"ADDRESS", &config.Address},
 	)
 	if err != nil {
 		return Config{}, err
+	}
+
+	err = getenv(prefix,
+		entry{"CSVDB_USERS", &config.CSVDBUsers},
+		entry{"CSVDB_ACCOUNTS", &config.CSVDBAccounts},
+		entry{"CSVDB_CTR", &config.CSVDBCtr},
+	)
+	if err != nil {
+		if err := getenv(prefix, entry{"DB_PATH", &config.DBPath}); err != nil {
+			return Config{}, err
+		}
 	}
 
 	if err := getenv(prefix, entry{"HTTPS_ADDRESS", &config.HTTPSAddress}); err == nil {
@@ -100,8 +118,13 @@ func parseCertKeys(certKeys string) ([]CertKey, error) {
 
 func ListenAndServe(ctx context.Context, config Config, logger *log.Logger) error {
 	h := new(handler.Handler)
+
 	var err error
-	h.DB, err = sqlite3.Init(ctx, config.DBPath)
+	if config.DBPath != "" {
+		h.DB, err = sqlite3.Init(ctx, config.DBPath)
+	} else {
+		h.DB, err = csvdb.Init(config.CSVDBUsers, config.CSVDBAccounts, config.CSVDBCtr)
+	}
 	if err != nil {
 		return err
 	}
