@@ -74,9 +74,7 @@ type table struct {
 	*os.File
 }
 
-func (t *table) all() ([][]string, error) {
-	ctx := context.TODO()
-
+func (t *table) all(ctx context.Context) ([][]string, error) {
 	type ret struct {
 		recs [][]string
 		err  error
@@ -109,9 +107,7 @@ func (t *table) allUnsync() ([][]string, error) {
 	return csv.NewReader(t).ReadAll()
 }
 
-func (t *table) update(f func([][]string) ([][]string, error)) error {
-	ctx := context.TODO()
-
+func (t *table) update(ctx context.Context, f func([][]string) ([][]string, error)) error {
 	c := make(chan error)
 
 	go func() {
@@ -147,9 +143,7 @@ func (t *table) update(f func([][]string) ([][]string, error)) error {
 	}
 }
 
-func (t *table) insert(record []string) error {
-	ctx := context.TODO()
-
+func (t *table) insert(ctx context.Context, record []string) error {
 	c := make(chan error)
 
 	go func() {
@@ -184,9 +178,7 @@ const (
 	ctrPosAcc  = 1
 )
 
-func bumpCtr(t *table, ctrPos uint) (int, error) {
-	ctx := context.TODO()
-
+func bumpCtr(ctx context.Context, t *table, ctrPos uint) (int, error) {
 	c := make(chan error)
 
 	var id1, id2 int

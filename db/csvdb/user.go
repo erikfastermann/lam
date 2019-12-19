@@ -16,8 +16,8 @@ const (
 	uLen      = 4
 )
 
-func (d *DB) User(_ context.Context, username string) (*db.User, error) {
-	users, err := d.users.all()
+func (d *DB) User(ctx context.Context, username string) (*db.User, error) {
+	users, err := d.users.all(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -29,8 +29,8 @@ func (d *DB) User(_ context.Context, username string) (*db.User, error) {
 	return nil, sql.ErrNoRows
 }
 
-func (d *DB) Usernames(_ context.Context) ([]string, error) {
-	users, err := d.users.all()
+func (d *DB) Usernames(ctx context.Context) ([]string, error) {
+	users, err := d.users.all(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -41,8 +41,8 @@ func (d *DB) Usernames(_ context.Context) ([]string, error) {
 	return usernames, nil
 }
 
-func (d *DB) UserByToken(_ context.Context, token string) (*db.User, error) {
-	users, err := d.users.all()
+func (d *DB) UserByToken(ctx context.Context, token string) (*db.User, error) {
+	users, err := d.users.all(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -54,21 +54,21 @@ func (d *DB) UserByToken(_ context.Context, token string) (*db.User, error) {
 	return nil, sql.ErrNoRows
 }
 
-func (d *DB) AddUser(_ context.Context, username, password string) error {
-	id, err := bumpCtr(d.ctr, ctrPosUser)
+func (d *DB) AddUser(ctx context.Context, username, password string) error {
+	id, err := bumpCtr(ctx, d.ctr, ctrPosUser)
 	if err != nil {
 		return err
 	}
 
-	return d.users.insert(userToRecord(&db.User{
+	return d.users.insert(ctx, userToRecord(&db.User{
 		ID:       id,
 		Username: username,
 		Password: password,
 	}))
 }
 
-func (d *DB) RemoveUser(_ context.Context, username string) error {
-	return d.users.update(func(users [][]string) ([][]string, error) {
+func (d *DB) RemoveUser(ctx context.Context, username string) error {
+	return d.users.update(ctx, func(users [][]string) ([][]string, error) {
 		for i, u := range users {
 			if u[uUsername] == username {
 				users[i] = users[len(users)-1]
@@ -80,9 +80,9 @@ func (d *DB) RemoveUser(_ context.Context, username string) error {
 	})
 }
 
-func (d *DB) EditToken(_ context.Context, id int, token string) error {
+func (d *DB) EditToken(ctx context.Context, id int, token string) error {
 	idStr := strconv.Itoa(id)
-	return d.users.update(func(users [][]string) ([][]string, error) {
+	return d.users.update(ctx, func(users [][]string) ([][]string, error) {
 		for i, u := range users {
 			if u[uID] == idStr {
 				users[i][uToken] = token

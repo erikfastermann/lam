@@ -27,8 +27,8 @@ const (
 	aLen             = 13
 )
 
-func (d *DB) Account(_ context.Context, id int) (*db.Account, error) {
-	accs, err := d.accs.all()
+func (d *DB) Account(ctx context.Context, id int) (*db.Account, error) {
+	accs, err := d.accs.all(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -42,8 +42,8 @@ func (d *DB) Account(_ context.Context, id int) (*db.Account, error) {
 }
 
 // TODO: ORDER BY password_changed ASC, perma ASC, region ASC, tag ASC
-func (d *DB) Accounts(_ context.Context) ([]*db.Account, error) {
-	records, err := d.accs.all()
+func (d *DB) Accounts(ctx context.Context) ([]*db.Account, error) {
+	records, err := d.accs.all(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -58,19 +58,19 @@ func (d *DB) Accounts(_ context.Context) ([]*db.Account, error) {
 	return accs, nil
 }
 
-func (d *DB) AddAccount(_ context.Context, acc *db.Account) error {
-	id, err := bumpCtr(d.ctr, ctrPosAcc)
+func (d *DB) AddAccount(ctx context.Context, acc *db.Account) error {
+	id, err := bumpCtr(ctx, d.ctr, ctrPosAcc)
 	if err != nil {
 		return err
 	}
 
 	acc.ID = id
-	return d.accs.insert(accToRecord(acc))
+	return d.accs.insert(ctx, accToRecord(acc))
 }
 
-func (d *DB) RemoveAccount(_ context.Context, id int) error {
+func (d *DB) RemoveAccount(ctx context.Context, id int) error {
 	idStr := strconv.Itoa(id)
-	return d.accs.update(func(accs [][]string) ([][]string, error) {
+	return d.accs.update(ctx, func(accs [][]string) ([][]string, error) {
 		for i, a := range accs {
 			if a[aID] == idStr {
 				accs[i] = accs[len(accs)-1]
@@ -82,9 +82,9 @@ func (d *DB) RemoveAccount(_ context.Context, id int) error {
 	})
 }
 
-func (d *DB) EditAccount(_ context.Context, id int, acc *db.Account) error {
+func (d *DB) EditAccount(ctx context.Context, id int, acc *db.Account) error {
 	idStr := strconv.Itoa(id)
-	return d.accs.update(func(accs [][]string) ([][]string, error) {
+	return d.accs.update(ctx, func(accs [][]string) ([][]string, error) {
 		for i, a := range accs {
 			if a[aID] == idStr {
 				elo := accs[i][aElo]
@@ -98,9 +98,9 @@ func (d *DB) EditAccount(_ context.Context, id int, acc *db.Account) error {
 	})
 }
 
-func (d *DB) EditElo(_ context.Context, id int, elo string) error {
+func (d *DB) EditElo(ctx context.Context, id int, elo string) error {
 	idStr := strconv.Itoa(id)
-	return d.accs.update(func(accs [][]string) ([][]string, error) {
+	return d.accs.update(ctx, func(accs [][]string) ([][]string, error) {
 		for i, a := range accs {
 			if a[aID] == idStr {
 				accs[i][aElo] = elo
