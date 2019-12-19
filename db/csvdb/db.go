@@ -9,7 +9,6 @@ import (
 	"sync"
 )
 
-// TODO: use context
 type DB struct {
 	accs  *table
 	users *table
