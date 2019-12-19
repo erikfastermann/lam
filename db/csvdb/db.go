@@ -47,7 +47,7 @@ func Init(users, accounts, ctr string) (*DB, error) {
 		return nil, err
 	}
 	if fi.Size() == 0 {
-		if _, err := fmt.Fprintf(d.ctr, "%d,%d", 0, 0); err != nil {
+		if _, err := fmt.Fprint(d.ctr, "0,0"); err != nil {
 			d.users.Close()
 			d.accs.Close()
 			d.ctr.Close()
