@@ -1,6 +1,7 @@
 package csvdb
 
 import (
+	"context"
 	"encoding/csv"
 	"fmt"
 	"io"
@@ -74,9 +75,31 @@ type table struct {
 }
 
 func (t *table) all() ([][]string, error) {
-	t.Lock()
-	defer t.Unlock()
-	return t.allUnsync()
+	ctx := context.TODO()
+
+	type ret struct {
+		recs [][]string
+		err  error
+	}
+	c := make(chan ret)
+
+	go func() {
+		t.Lock()
+		defer t.Unlock()
+		v := ret{}
+		v.recs, v.err = t.allUnsync()
+		select {
+		case c <- v:
+		default:
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case v := <-c:
+		return v.recs, v.err
+	}
 }
 
 func (t *table) allUnsync() ([][]string, error) {
@@ -87,37 +110,73 @@ func (t *table) allUnsync() ([][]string, error) {
 }
 
 func (t *table) update(f func([][]string) ([][]string, error)) error {
-	t.Lock()
-	defer t.Unlock()
-	records, err := t.allUnsync()
-	if err != nil {
+	ctx := context.TODO()
+
+	c := make(chan error)
+
+	go func() {
+		select {
+		case c <- func() error {
+			t.Lock()
+			defer t.Unlock()
+			records, err := t.allUnsync()
+			if err != nil {
+				return err
+			}
+			records, err = f(records)
+			if err != nil {
+				return err
+			}
+			if err := t.Truncate(0); err != nil {
+				return err
+			}
+			if _, err := t.Seek(0, io.SeekStart); err != nil {
+				return err
+			}
+			return csv.NewWriter(t).WriteAll(records)
+		}():
+		default:
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-c:
 		return err
 	}
-	records, err = f(records)
-	if err != nil {
-		return err
-	}
-	if err := t.Truncate(0); err != nil {
-		return err
-	}
-	if _, err := t.Seek(0, io.SeekStart); err != nil {
-		return err
-	}
-	return csv.NewWriter(t).WriteAll(records)
 }
 
 func (t *table) insert(record []string) error {
-	t.Lock()
-	defer t.Unlock()
-	if _, err := t.Seek(0, io.SeekEnd); err != nil {
+	ctx := context.TODO()
+
+	c := make(chan error)
+
+	go func() {
+		select {
+		case c <- func() error {
+			t.Lock()
+			defer t.Unlock()
+			if _, err := t.Seek(0, io.SeekEnd); err != nil {
+				return err
+			}
+			w := csv.NewWriter(t)
+			if err := w.Write(record); err != nil {
+				return err
+			}
+			w.Flush()
+			return w.Error()
+		}():
+		default:
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-c:
 		return err
 	}
-	w := csv.NewWriter(t)
-	if err := w.Write(record); err != nil {
-		return err
-	}
-	w.Flush()
-	return w.Error()
 }
 
 const (
@@ -126,6 +185,11 @@ const (
 )
 
 func bumpCtr(t *table, ctrPos uint) (int, error) {
+	ctx := context.TODO()
+
+	c := make(chan error)
+
+	var id1, id2 int
 	bump1, bump2 := 0, 0
 	switch ctrPos {
 	case 0:
@@ -135,29 +199,43 @@ func bumpCtr(t *table, ctrPos uint) (int, error) {
 	default:
 		panic("invalid counter")
 	}
-	t.Lock()
-	defer t.Unlock()
 
-	if _, err := t.Seek(0, io.SeekStart); err != nil {
-		return -1, err
-	}
-	var id1, id2 int
-	if _, err := fmt.Fscanf(t, "%d,%d", &id1, &id2); err != nil {
-		return -1, err
-	}
+	go func() {
+		select {
+		case c <- func() error {
+			t.Lock()
+			defer t.Unlock()
 
-	if err := t.Truncate(0); err != nil {
-		return -1, err
-	}
-	if _, err := t.Seek(0, io.SeekStart); err != nil {
-		return -1, err
-	}
-	if _, err := fmt.Fprintf(t, "%d,%d", id1+bump1, id2+bump2); err != nil {
-		return -1, err
-	}
+			if _, err := t.Seek(0, io.SeekStart); err != nil {
+				return err
+			}
+			if _, err := fmt.Fscanf(t, "%d,%d", &id1, &id2); err != nil {
+				return err
+			}
 
-	if bump1 > 0 {
-		return id1, nil
+			if err := t.Truncate(0); err != nil {
+				return err
+			}
+			if _, err := t.Seek(0, io.SeekStart); err != nil {
+				return err
+			}
+			_, err := fmt.Fprintf(t, "%d,%d", id1+bump1, id2+bump2)
+			return err
+		}():
+		default:
+		}
+	}()
+
+	select {
+	case <-ctx.Done():
+		return -1, ctx.Err()
+	case err := <-c:
+		if err != nil {
+			return -1, err
+		}
+		if bump1 > 0 {
+			return id1, nil
+		}
+		return id2, nil
 	}
-	return id2, nil
 }
