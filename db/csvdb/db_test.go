@@ -86,6 +86,10 @@ func TestDB(t *testing.T) {
 		t.Fatalf("found deleted user: %+v (err: %v)", u, err)
 	}
 
+	if _, err := d.Accounts(ctx); err != nil {
+		t.Fatal(err)
+	}
+
 	accounts := []*db.Account{
 		{
 			ID:       0,
