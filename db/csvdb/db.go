@@ -39,20 +39,23 @@ func Init(users, accounts, ctr string) (*DB, error) {
 		return nil, err
 	}
 
-	fi, err := d.ctr.Stat()
+	err = func() error {
+		fi, err := d.ctr.Stat()
+		if err != nil {
+			return err
+		}
+		if fi.Size() == 0 {
+			if _, err := fmt.Fprint(d.ctr, "0,0"); err != nil {
+				return err
+			}
+		}
+		return nil
+	}()
 	if err != nil {
 		d.users.Close()
 		d.accs.Close()
 		d.ctr.Close()
 		return nil, err
-	}
-	if fi.Size() == 0 {
-		if _, err := fmt.Fprint(d.ctr, "0,0"); err != nil {
-			d.users.Close()
-			d.accs.Close()
-			d.ctr.Close()
-			return nil, err
-		}
 	}
 
 	return d, nil
