@@ -74,29 +74,15 @@ type table struct {
 }
 
 func (t *table) all(ctx context.Context) ([][]string, error) {
-	type ret struct {
-		recs [][]string
-		err  error
-	}
-	c := make(chan ret)
+	var recs [][]string
 
-	go func() {
+	return recs, withCtx(ctx, func() error {
 		t.Lock()
 		defer t.Unlock()
-		v := ret{}
-		v.recs, v.err = t.allUnsync()
-		select {
-		case c <- v:
-		default:
-		}
-	}()
-
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case v := <-c:
-		return v.recs, v.err
-	}
+		var err error
+		recs, err = t.allUnsync()
+		return err
+	})
 }
 
 func (t *table) allUnsync() ([][]string, error) {
@@ -107,69 +93,41 @@ func (t *table) allUnsync() ([][]string, error) {
 }
 
 func (t *table) update(ctx context.Context, f func([][]string) ([][]string, error)) error {
-	c := make(chan error)
-
-	go func() {
-		select {
-		case c <- func() error {
-			t.Lock()
-			defer t.Unlock()
-			records, err := t.allUnsync()
-			if err != nil {
-				return err
-			}
-			records, err = f(records)
-			if err != nil {
-				return err
-			}
-			if err := t.Truncate(0); err != nil {
-				return err
-			}
-			if _, err := t.Seek(0, io.SeekStart); err != nil {
-				return err
-			}
-			return csv.NewWriter(t).WriteAll(records)
-		}():
-		default:
+	return withCtx(ctx, func() error {
+		t.Lock()
+		defer t.Unlock()
+		records, err := t.allUnsync()
+		if err != nil {
+			return err
 		}
-	}()
-
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case err := <-c:
-		return err
-	}
+		records, err = f(records)
+		if err != nil {
+			return err
+		}
+		if err := t.Truncate(0); err != nil {
+			return err
+		}
+		if _, err := t.Seek(0, io.SeekStart); err != nil {
+			return err
+		}
+		return csv.NewWriter(t).WriteAll(records)
+	})
 }
 
 func (t *table) insert(ctx context.Context, record []string) error {
-	c := make(chan error)
-
-	go func() {
-		select {
-		case c <- func() error {
-			t.Lock()
-			defer t.Unlock()
-			if _, err := t.Seek(0, io.SeekEnd); err != nil {
-				return err
-			}
-			w := csv.NewWriter(t)
-			if err := w.Write(record); err != nil {
-				return err
-			}
-			w.Flush()
-			return w.Error()
-		}():
-		default:
+	return withCtx(ctx, func() error {
+		t.Lock()
+		defer t.Unlock()
+		if _, err := t.Seek(0, io.SeekEnd); err != nil {
+			return err
 		}
-	}()
-
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case err := <-c:
-		return err
-	}
+		w := csv.NewWriter(t)
+		if err := w.Write(record); err != nil {
+			return err
+		}
+		w.Flush()
+		return w.Error()
+	})
 }
 
 const (
@@ -178,8 +136,6 @@ const (
 )
 
 func bumpCtr(ctx context.Context, t *table, ctrPos uint) (int, error) {
-	c := make(chan error)
-
 	var id1, id2 int
 	bump1, bump2 := 0, 0
 	switch ctrPos {
@@ -191,42 +147,49 @@ func bumpCtr(ctx context.Context, t *table, ctrPos uint) (int, error) {
 		panic("invalid counter")
 	}
 
+	err := withCtx(ctx, func() error {
+		t.Lock()
+		defer t.Unlock()
+
+		if _, err := t.Seek(0, io.SeekStart); err != nil {
+			return err
+		}
+		if _, err := fmt.Fscanf(t, "%d,%d", &id1, &id2); err != nil {
+			return err
+		}
+
+		if err := t.Truncate(0); err != nil {
+			return err
+		}
+		if _, err := t.Seek(0, io.SeekStart); err != nil {
+			return err
+		}
+		_, err := fmt.Fprintf(t, "%d,%d", id1+bump1, id2+bump2)
+		return err
+	})
+
+	if err != nil {
+		return -1, err
+	}
+	if bump1 > 0 {
+		return id1, nil
+	}
+	return id2, nil
+}
+
+func withCtx(ctx context.Context, f func() error) error {
+	c := make(chan error)
 	go func() {
 		select {
-		case c <- func() error {
-			t.Lock()
-			defer t.Unlock()
-
-			if _, err := t.Seek(0, io.SeekStart); err != nil {
-				return err
-			}
-			if _, err := fmt.Fscanf(t, "%d,%d", &id1, &id2); err != nil {
-				return err
-			}
-
-			if err := t.Truncate(0); err != nil {
-				return err
-			}
-			if _, err := t.Seek(0, io.SeekStart); err != nil {
-				return err
-			}
-			_, err := fmt.Fprintf(t, "%d,%d", id1+bump1, id2+bump2)
-			return err
-		}():
+		case c <- f():
 		default:
 		}
 	}()
 
 	select {
 	case <-ctx.Done():
-		return -1, ctx.Err()
+		return ctx.Err()
 	case err := <-c:
-		if err != nil {
-			return -1, err
-		}
-		if bump1 > 0 {
-			return id1, nil
-		}
-		return id2, nil
+		return err
 	}
 }
