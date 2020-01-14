@@ -44,8 +44,8 @@ type entry struct {
 	dest *string
 }
 
-func ConfigFromEnv(prefix string) (Config, error) {
-	var config Config
+func ConfigFromEnv(prefix string) (*Config, error) {
+	config := new(Config)
 	var users string
 	err := getenv(prefix,
 		entry{"TEMPLATE_GLOB", &config.TemplateGlob},
@@ -55,12 +55,12 @@ func ConfigFromEnv(prefix string) (Config, error) {
 		entry{"USERS", &users},
 	)
 	if err != nil {
-		return Config{}, err
+		return nil, err
 	}
 
 	split := strings.Split(users, ":")
 	if len(split)%2 != 0 {
-		return Config{}, fmt.Errorf("not every user has a password set")
+		return nil, fmt.Errorf("not every user has a password set")
 	}
 	for i := 0; i < len(split); i += 2 {
 		config.Users = append(config.Users, &handler.User{
@@ -78,12 +78,12 @@ func ConfigFromEnv(prefix string) (Config, error) {
 			entry{"HTTPS_CERT_KEYS", &certKeys},
 		)
 		if err != nil {
-			return Config{}, err
+			return nil, err
 		}
 
 		config.HTTPSCertKeys, err = parseCertKeys(certKeys)
 		if err != nil {
-			return Config{}, err
+			return nil, err
 		}
 	}
 
@@ -117,7 +117,7 @@ func parseCertKeys(certKeys string) ([]CertKey, error) {
 	return parsed, nil
 }
 
-func ListenAndServe(ctx context.Context, config Config, logger *log.Logger) error {
+func ListenAndServe(ctx context.Context, config *Config, logger *log.Logger) error {
 	h := &handler.Handler{
 		Users: config.Users,
 	}
