@@ -1,4 +1,4 @@
-package csvdb
+package db
 
 import (
 	"context"
@@ -7,12 +7,9 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
-
-	"github.com/erikfastermann/lam/db"
 )
 
 func TestDB(t *testing.T) {
-	var _ db.DB = &DB{}
 	ctx := context.TODO()
 
 	dir, err := ioutil.TempDir(os.TempDir(), "lam-test")
@@ -35,7 +32,7 @@ func TestDB(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	accounts := []*db.Account{
+	accounts := []*Account{
 		{
 			ID:       0,
 			Region:   "euw",
@@ -126,7 +123,7 @@ func TestDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !reflect.DeepEqual(append(make([]*db.Account, 0), accounts[0], accounts[2]), accs) {
+	if !reflect.DeepEqual(append(make([]*Account, 0), accounts[0], accounts[2]), accs) {
 		t.Fatal("accounts don't match after remove")
 	}
 

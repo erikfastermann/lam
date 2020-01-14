@@ -6,7 +6,8 @@ services:
                 environment:
                         LAM_ADDRESS: ':80'
                         LAM_USERS: ''
-                        LAM_DB_PATH: /mnt/lam.db
+                        LAM_ACCOUNTS: /mnt/accounts.csv
+                        LAM_CTR: /mnt/ctr.csv
                         # LAM_HTTPS_DOMAIN: 'your-domain.com'
                         # LAM_HTTPS_ADDRESS: ':443'
                         # LAM_HTTPS_CERTS: '/var/lam/keypairs/cert-file1,/var/lam/keypairs/cert-file2'

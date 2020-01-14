@@ -1,4 +1,4 @@
-package csvdb
+package db
 
 import (
 	"context"
@@ -7,9 +7,23 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/erikfastermann/lam/db"
 )
+
+type Account struct {
+	ID              int
+	Region          string
+	Tag             string
+	IGN             string
+	Username        string
+	Password        string
+	User            string
+	Leaverbuster    int
+	Ban             NullTime
+	Perma           bool
+	PasswordChanged bool
+	Pre30           bool
+	Elo             string
+}
 
 const (
 	aID              = 0
@@ -28,7 +42,7 @@ const (
 	aLen             = 13
 )
 
-func (d *DB) Account(ctx context.Context, id int) (*db.Account, error) {
+func (d *DB) Account(ctx context.Context, id int) (*Account, error) {
 	accs, err := d.accs.all(ctx)
 	if err != nil {
 		return nil, err
@@ -42,12 +56,12 @@ func (d *DB) Account(ctx context.Context, id int) (*db.Account, error) {
 	return nil, sql.ErrNoRows
 }
 
-func (d *DB) Accounts(ctx context.Context) ([]*db.Account, error) {
+func (d *DB) Accounts(ctx context.Context) ([]*Account, error) {
 	records, err := d.accs.all(ctx)
 	if err != nil {
 		return nil, err
 	}
-	accs := make([]*db.Account, 0)
+	accs := make([]*Account, 0)
 	for _, acc := range records {
 		a, err := recordToAcc(acc)
 		if err != nil {
@@ -56,23 +70,23 @@ func (d *DB) Accounts(ctx context.Context) ([]*db.Account, error) {
 		accs = append(accs, a)
 	}
 
-	less := []func(i, j *db.Account) bool{
-		func(i, j *db.Account) bool {
+	less := []func(i, j *Account) bool{
+		func(i, j *Account) bool {
 			if i.PasswordChanged == j.PasswordChanged {
 				return false
 			}
 			return j.PasswordChanged
 		},
-		func(i, j *db.Account) bool {
+		func(i, j *Account) bool {
 			if i.Perma == j.Perma {
 				return false
 			}
 			return j.Perma
 		},
-		func(i, j *db.Account) bool {
+		func(i, j *Account) bool {
 			return i.Region < j.Region
 		},
-		func(i, j *db.Account) bool {
+		func(i, j *Account) bool {
 			return i.Tag < j.Tag
 		},
 	}
@@ -94,7 +108,7 @@ func (d *DB) Accounts(ctx context.Context) ([]*db.Account, error) {
 	return accs, nil
 }
 
-func (d *DB) AddAccount(ctx context.Context, acc *db.Account) error {
+func (d *DB) AddAccount(ctx context.Context, acc *Account) error {
 	id, err := bumpCtr(ctx, d.ctr)
 	if err != nil {
 		return err
@@ -118,7 +132,7 @@ func (d *DB) RemoveAccount(ctx context.Context, id int) error {
 	})
 }
 
-func (d *DB) EditAccount(ctx context.Context, id int, acc *db.Account) error {
+func (d *DB) EditAccount(ctx context.Context, id int, acc *Account) error {
 	idStr := strconv.Itoa(id)
 	return d.accs.update(ctx, func(accs [][]string) ([][]string, error) {
 		for i, a := range accs {
@@ -152,7 +166,7 @@ const (
 	timeFormat = time.RFC3339
 )
 
-func accToRecord(a *db.Account) []string {
+func accToRecord(a *Account) []string {
 	ban := nullTime
 	if a.Ban.Valid {
 		ban = a.Ban.Time.Format(timeFormat)
@@ -175,7 +189,7 @@ func accToRecord(a *db.Account) []string {
 	return s
 }
 
-func recordToAcc(r []string) (*db.Account, error) {
+func recordToAcc(r []string) (*Account, error) {
 	id, err := strconv.Atoi(r[aID])
 	if err != nil {
 		return nil, err
@@ -197,20 +211,20 @@ func recordToAcc(r []string) (*db.Account, error) {
 		return nil, err
 	}
 
-	ban := db.NullTime{}
+	ban := NullTime{}
 	banStr := r[aBan]
 	if strings.ToLower(banStr) != nullTime {
 		t, err := time.Parse(timeFormat, banStr)
 		if err != nil {
 			return nil, err
 		}
-		ban = db.NullTime{
+		ban = NullTime{
 			Time:  t,
 			Valid: true,
 		}
 	}
 
-	return &db.Account{
+	return &Account{
 		ID:              id,
 		Region:          r[aRegion],
 		Tag:             r[aTag],

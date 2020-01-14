@@ -13,18 +13,16 @@ import (
 	"time"
 
 	"github.com/erikfastermann/httpwrap"
-	"github.com/erikfastermann/lam/db/csvdb"
-	"github.com/erikfastermann/lam/db/sqlite3"
+	"github.com/erikfastermann/lam/db"
 	"github.com/erikfastermann/lam/elo"
 	"github.com/erikfastermann/lam/handler"
 )
 
 type Config struct {
-	DBPath string
-	Users  []*handler.User
+	Users []*handler.User
 
-	CSVDBAccounts string
-	CSVDBCtr      string
+	Accounts string
+	Ctr      string
 
 	TemplateGlob string
 
@@ -48,19 +46,18 @@ type entry struct {
 
 func ConfigFromEnv(prefix string) (Config, error) {
 	var config Config
-
+	var users string
 	err := getenv(prefix,
 		entry{"TEMPLATE_GLOB", &config.TemplateGlob},
 		entry{"ADDRESS", &config.Address},
+		entry{"ACCOUNTS", &config.Accounts},
+		entry{"CTR", &config.Ctr},
+		entry{"USERS", &users},
 	)
 	if err != nil {
 		return Config{}, err
 	}
 
-	var users string
-	if err := getenv(prefix, entry{"USERS", &users}); err != nil {
-		return Config{}, err
-	}
 	split := strings.Split(users, ":")
 	if len(split)%2 != 0 {
 		return Config{}, fmt.Errorf("not every user has a password set")
@@ -70,16 +67,6 @@ func ConfigFromEnv(prefix string) (Config, error) {
 			Username: split[i],
 			Password: split[i+1],
 		})
-	}
-
-	err = getenv(prefix,
-		entry{"CSVDB_ACCOUNTS", &config.CSVDBAccounts},
-		entry{"CSVDB_CTR", &config.CSVDBCtr},
-	)
-	if err != nil {
-		if err := getenv(prefix, entry{"DB_PATH", &config.DBPath}); err != nil {
-			return Config{}, err
-		}
 	}
 
 	if err := getenv(prefix, entry{"HTTPS_ADDRESS", &config.HTTPSAddress}); err == nil {
@@ -136,11 +123,7 @@ func ListenAndServe(ctx context.Context, config Config, logger *log.Logger) erro
 	}
 
 	var err error
-	if config.DBPath != "" {
-		h.DB, err = sqlite3.Init(ctx, config.DBPath)
-	} else {
-		h.DB, err = csvdb.Init(config.CSVDBAccounts, config.CSVDBCtr)
-	}
+	h.DB, err = db.Init(config.Accounts, config.Ctr)
 	if err != nil {
 		return err
 	}

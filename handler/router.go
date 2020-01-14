@@ -49,7 +49,7 @@ type route struct {
 type handlerFunc func(ctx context.Context, username string, w http.ResponseWriter, r *http.Request) error
 
 type Handler struct {
-	DB db.DB
+	DB *db.DB
 
 	mu    sync.RWMutex
 	Users []*User
