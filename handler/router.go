@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"context"
 	"errors"
+	"fmt"
 	"html/template"
 	"log"
 	"net/http"
@@ -10,7 +10,6 @@ import (
 	"path"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/erikfastermann/httpwrap"
 	"github.com/erikfastermann/lam/db"
@@ -46,7 +45,7 @@ type route struct {
 	hf      handlerFunc
 }
 
-type handlerFunc func(ctx context.Context, username string, w http.ResponseWriter, r *http.Request) error
+type handlerFunc func(username string, w http.ResponseWriter, r *http.Request) error
 
 type Handler struct {
 	DB *db.DB
@@ -72,23 +71,18 @@ func (h *Handler) ServeHTTPWithErr(w http.ResponseWriter, r *http.Request) error
 func (h *Handler) serve(w http.ResponseWriter, r *http.Request) error {
 	h.once.Do(h.setup)
 
-	ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
-	defer cancel()
-
 	header := w.Header()
 	header.Add("Referrer-Policy", "no-referrer")
 	header.Add("X-Frame-Options", "DENY")
 	header.Add("X-Content-Type-Options", "nosniff")
-	if r.URL.Scheme == "https" {
-		header.Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
-	}
+	header.Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 
 	username, err := h.checkAuth(r)
 	if path.Clean(r.URL.Path) == routeLogin {
 		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			return errBadMethod
 		}
-		return h.login(ctx, username, w, r)
+		return h.login(username, w, r)
 	}
 	if err != nil {
 		http.Redirect(w, r, routeLogin, http.StatusSeeOther)
@@ -99,7 +93,7 @@ func (h *Handler) serve(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	return fn(ctx, username, w, r)
+	return fn(username, w, r)
 }
 
 func (h *Handler) router(r *http.Request) (handlerFunc, error) {
@@ -124,6 +118,7 @@ func (h *Handler) router(r *http.Request) (handlerFunc, error) {
 
 func (h *Handler) setup() {
 	h.logger = log.New(os.Stderr, "ERROR ", log.LstdFlags)
+
 	h.protectedRoutes = map[string]route{
 		routeLogout: {
 			false,
@@ -171,4 +166,11 @@ func splitURL(url string) (string, string) {
 		return split[0], "/"
 	}
 	return split[0], "/" + split[1]
+}
+
+func badRequestf(format string, a ...interface{}) error {
+	return httpwrap.Error{
+		StatusCode: http.StatusBadRequest,
+		Err:        fmt.Errorf(format, a...),
+	}
 }

@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
@@ -73,13 +72,13 @@ func (h *Handler) checkAuth(r *http.Request) (string, error) {
 	token := c.Value
 	u, ok := h.findUser(token)
 	if !ok {
-		return "", fmt.Errorf("token %q doesn't exist", token)
+		return "", unauthf("token %q doesn't exist", token)
 	}
 
 	return u.Username, nil
 }
 
-func (h *Handler) login(ctx context.Context, username string, w http.ResponseWriter, r *http.Request) error {
+func (h *Handler) login(username string, w http.ResponseWriter, r *http.Request) error {
 	if username != "" {
 		http.Redirect(w, r, routeOverview, http.StatusSeeOther)
 		return nil
@@ -111,7 +110,7 @@ func (h *Handler) login(ctx context.Context, username string, w http.ResponseWri
 	return nil
 }
 
-func (h *Handler) logout(ctx context.Context, username string, w http.ResponseWriter, r *http.Request) error {
+func (h *Handler) logout(username string, w http.ResponseWriter, r *http.Request) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 

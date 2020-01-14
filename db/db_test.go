@@ -1,7 +1,6 @@
 package db
 
 import (
-	"context"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -10,8 +9,6 @@ import (
 )
 
 func TestDB(t *testing.T) {
-	ctx := context.TODO()
-
 	dir, err := ioutil.TempDir(os.TempDir(), "lam-test")
 	if err != nil {
 		t.Fatal(err)
@@ -28,7 +25,7 @@ func TestDB(t *testing.T) {
 	}
 	defer d.Close()
 
-	if _, err := d.Accounts(ctx); err != nil {
+	if _, err := d.Accounts(); err != nil {
 		t.Fatal(err)
 	}
 
@@ -67,17 +64,17 @@ func TestDB(t *testing.T) {
 		},
 	}
 	for _, a := range accounts {
-		if err := d.AddAccount(ctx, a); err != nil {
+		if err := d.AddAccount(a); err != nil {
 			t.Fatal(err)
 		}
 	}
 	for id := 2; id >= 0; id-- {
-		if a, err := d.Account(ctx, id); err != nil || !reflect.DeepEqual(a, accounts[id]) {
+		if a, err := d.Account(id); err != nil || !reflect.DeepEqual(a, accounts[id]) {
 			t.Fatalf("expected acc %+v, got %+v (err: %v)", accounts[id], a, err)
 		}
 	}
 
-	accs, err := d.Accounts(ctx)
+	accs, err := d.Accounts()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -85,10 +82,10 @@ func TestDB(t *testing.T) {
 		t.Fatal("accounts don't match")
 	}
 
-	if err := d.EditAccount(ctx, 1, accounts[0]); err != nil {
+	if err := d.EditAccount(1, accounts[0]); err != nil {
 		t.Fatal(err)
 	}
-	acc, err := d.Account(ctx, 1)
+	acc, err := d.Account(1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,10 +102,10 @@ func TestDB(t *testing.T) {
 	}
 
 	elo := "Challenger"
-	if err := d.EditElo(ctx, 1, elo); err != nil {
+	if err := d.EditElo(1, elo); err != nil {
 		t.Fatal(err)
 	}
-	acc, err = d.Account(ctx, 1)
+	acc, err = d.Account(1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -116,10 +113,10 @@ func TestDB(t *testing.T) {
 		t.Fatalf("EditElo: expected %s, got %s", elo, acc.Elo)
 	}
 
-	if err := d.RemoveAccount(ctx, 1); err != nil {
+	if err := d.RemoveAccount(1); err != nil {
 		t.Fatal(err)
 	}
-	accs, err = d.Accounts(ctx)
+	accs, err = d.Accounts()
 	if err != nil {
 		t.Fatal(err)
 	}

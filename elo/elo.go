@@ -1,7 +1,6 @@
 package elo
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -16,8 +15,7 @@ import (
 var ErrNotFound = errors.New("account not found")
 
 func UpdateAll(db *db.DB) error {
-	ctx := context.TODO()
-	accs, err := db.Accounts(ctx)
+	accs, err := db.Accounts()
 	if err != nil {
 		return fmt.Errorf("failed reading accounts from database, %v", err)
 	}
@@ -30,7 +28,8 @@ func UpdateAll(db *db.DB) error {
 			}
 			return err
 		}
-		if err := db.EditElo(ctx, acc.ID, elo); err != nil {
+
+		if err := db.EditElo(acc.ID, elo); err != nil {
 			return fmt.Errorf("couldn't update elo in database (Account-ID: %d), %v", acc.ID, err)
 		}
 	}
