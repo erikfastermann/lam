@@ -2,47 +2,15 @@ package db
 
 import (
 	"database/sql"
+	"encoding/csv"
+	"io"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 )
 
-type Account struct {
-	ID              int
-	Region          string
-	Tag             string
-	IGN             string
-	Username        string
-	Password        string
-	User            string
-	Leaverbuster    int
-	Ban             NullTime
-	Perma           bool
-	PasswordChanged bool
-	Pre30           bool
-	Elo             string
-}
-
-const (
-	aID              = 0
-	aRegion          = 1
-	aTag             = 2
-	aIGN             = 3
-	aUsername        = 4
-	aPassword        = 5
-	aUser            = 6
-	aLeaverbuster    = 7
-	aBan             = 8
-	aPerma           = 9
-	aPasswordChanged = 10
-	aPre30           = 11
-	aElo             = 12
-	aLen             = 13
-)
-
 func (d *DB) Account(id int) (*Account, error) {
-	accs, err := d.accs.all()
+	accs, err := d.all()
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +24,7 @@ func (d *DB) Account(id int) (*Account, error) {
 }
 
 func (d *DB) Accounts() ([]*Account, error) {
-	records, err := d.accs.all()
+	records, err := d.all()
 	if err != nil {
 		return nil, err
 	}
@@ -108,18 +76,27 @@ func (d *DB) Accounts() ([]*Account, error) {
 }
 
 func (d *DB) AddAccount(acc *Account) error {
-	id, err := bumpCtr(d.ctr)
-	if err != nil {
+	d.Lock()
+	defer d.Unlock()
+
+	acc.ID = d.ctr
+	d.ctr++
+	record := accToRecord(acc)
+
+	if _, err := d.Seek(0, io.SeekEnd); err != nil {
 		return err
 	}
-
-	acc.ID = id
-	return d.accs.insert(accToRecord(acc))
+	w := csv.NewWriter(d)
+	if err := w.Write(record); err != nil {
+		return err
+	}
+	w.Flush()
+	return w.Error()
 }
 
 func (d *DB) RemoveAccount(id int) error {
 	idStr := strconv.Itoa(id)
-	return d.accs.update(func(accs [][]string) ([][]string, error) {
+	return d.update(func(accs [][]string) ([][]string, error) {
 		for i, a := range accs {
 			if a[aID] == idStr {
 				accs[i] = accs[len(accs)-1]
@@ -133,7 +110,7 @@ func (d *DB) RemoveAccount(id int) error {
 
 func (d *DB) EditAccount(id int, acc *Account) error {
 	idStr := strconv.Itoa(id)
-	return d.accs.update(func(accs [][]string) ([][]string, error) {
+	return d.update(func(accs [][]string) ([][]string, error) {
 		for i, a := range accs {
 			if a[aID] == idStr {
 				elo := accs[i][aElo]
@@ -149,7 +126,7 @@ func (d *DB) EditAccount(id int, acc *Account) error {
 
 func (d *DB) EditElo(id int, elo string) error {
 	idStr := strconv.Itoa(id)
-	return d.accs.update(func(accs [][]string) ([][]string, error) {
+	return d.update(func(accs [][]string) ([][]string, error) {
 		for i, a := range accs {
 			if a[aID] == idStr {
 				accs[i][aElo] = elo
@@ -160,8 +137,41 @@ func (d *DB) EditElo(id int, elo string) error {
 	})
 }
 
+type Account struct {
+	ID              int
+	Region          string
+	Tag             string
+	IGN             string
+	Username        string
+	Password        string
+	User            string
+	Leaverbuster    int
+	Ban             NullTime
+	Perma           bool
+	PasswordChanged bool
+	Pre30           bool
+	Elo             string
+}
+
 const (
-	nullTime   = "null"
+	aID              = 0
+	aRegion          = 1
+	aTag             = 2
+	aIGN             = 3
+	aUsername        = 4
+	aPassword        = 5
+	aUser            = 6
+	aLeaverbuster    = 7
+	aBan             = 8
+	aPerma           = 9
+	aPasswordChanged = 10
+	aPre30           = 11
+	aElo             = 12
+	aLen             = 13
+)
+
+const (
+	nullTime   = ""
 	timeFormat = time.RFC3339
 )
 
@@ -212,7 +222,7 @@ func recordToAcc(r []string) (*Account, error) {
 
 	ban := NullTime{}
 	banStr := r[aBan]
-	if strings.ToLower(banStr) != nullTime {
+	if banStr != nullTime {
 		t, err := time.Parse(timeFormat, banStr)
 		if err != nil {
 			return nil, err

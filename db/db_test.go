@@ -15,11 +15,8 @@ func TestDB(t *testing.T) {
 	}
 	defer os.RemoveAll(dir)
 
-	// d, err := Init("users.csv", "accs.csv", "ctr.csv")
-	path := func(path string) string {
-		return filepath.Join(dir, path)
-	}
-	d, err := Init(path("accs.csv"), path("ctr.csv"))
+	// d, err := Init("accs.csv")
+	d, err := Init(filepath.Join(dir, "accs.csv"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -31,7 +28,7 @@ func TestDB(t *testing.T) {
 
 	accounts := []*Account{
 		{
-			ID:       0,
+			ID:       1,
 			Region:   "euw",
 			Tag:      "blub",
 			IGN:      "player0",
@@ -41,7 +38,7 @@ func TestDB(t *testing.T) {
 			Elo:      "Wood IV",
 		},
 		{
-			ID:           1,
+			ID:           2,
 			Region:       "na",
 			Tag:          "blub",
 			IGN:          "player1",
@@ -52,7 +49,7 @@ func TestDB(t *testing.T) {
 			Perma:        true,
 		},
 		{
-			ID:              2,
+			ID:              3,
 			Region:          "ru",
 			Tag:             "hah",
 			IGN:             "player2",
@@ -69,7 +66,7 @@ func TestDB(t *testing.T) {
 		}
 	}
 	for id := 2; id >= 0; id-- {
-		if a, err := d.Account(id); err != nil || !reflect.DeepEqual(a, accounts[id]) {
+		if a, err := d.Account(id + 1); err != nil || !reflect.DeepEqual(a, accounts[id]) {
 			t.Fatalf("expected acc %+v, got %+v (err: %v)", accounts[id], a, err)
 		}
 	}
@@ -82,10 +79,10 @@ func TestDB(t *testing.T) {
 		t.Fatal("accounts don't match")
 	}
 
-	if err := d.EditAccount(1, accounts[0]); err != nil {
+	if err := d.EditAccount(2, accounts[0]); err != nil {
 		t.Fatal(err)
 	}
-	acc, err := d.Account(1)
+	acc, err := d.Account(2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,10 +99,10 @@ func TestDB(t *testing.T) {
 	}
 
 	elo := "Challenger"
-	if err := d.EditElo(1, elo); err != nil {
+	if err := d.EditElo(2, elo); err != nil {
 		t.Fatal(err)
 	}
-	acc, err = d.Account(1)
+	acc, err = d.Account(2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -113,13 +110,14 @@ func TestDB(t *testing.T) {
 		t.Fatalf("EditElo: expected %s, got %s", elo, acc.Elo)
 	}
 
-	if err := d.RemoveAccount(1); err != nil {
+	if err := d.RemoveAccount(2); err != nil {
 		t.Fatal(err)
 	}
 	accs, err = d.Accounts()
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	if !reflect.DeepEqual(append(make([]*Account, 0), accounts[0], accounts[2]), accs) {
 		t.Fatal("accounts don't match after remove")
 	}

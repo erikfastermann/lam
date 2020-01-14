@@ -11,7 +11,6 @@ services:
                         LAM_KEY: '/var/lam/keypairs/server.key'
                         LAM_USERS: 'user1:bcrypt1'
                         LAM_ACCOUNTS: '/mnt/accounts.csv'
-                        LAM_CTR: '/mnt/ctr.csv'
                 container_name: lam
                 ports:
                         - "80:80"

@@ -34,6 +34,4 @@ Users (e.g.: 'user1:bcrypt1:user2:bcrypt2'): `LAM_USERS`
 
 CSV DB Accounts (e.g.: '/accounts.csv'): `LAM_ACCOUNTS`
 
-CSV DB Counter (e.g.: '/ctr.csv'): `LAM_CTR`
-
 Template Glob (e.g.: 'template/*'): `LAM_TEMPLATE_GLOB`
