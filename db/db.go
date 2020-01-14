@@ -8,13 +8,6 @@ import (
 )
 
 type DB interface {
-	User(ctx context.Context, username string) (*User, error)
-	Usernames(ctx context.Context) ([]string, error)
-	UserByToken(ctx context.Context, token string) (*User, error)
-	AddUser(ctx context.Context, username, password string) error
-	RemoveUser(ctx context.Context, username string) error
-	EditToken(ctx context.Context, id int, token string) error
-
 	Account(ctx context.Context, id int) (*Account, error)
 	Accounts(ctx context.Context) ([]*Account, error)
 	AddAccount(ctx context.Context, acc *Account) error
@@ -23,13 +16,6 @@ type DB interface {
 	EditElo(ctx context.Context, id int, elo string) error
 
 	Close() error
-}
-
-type User struct {
-	ID       int
-	Username string
-	Password string
-	Token    string
 }
 
 type Account struct {

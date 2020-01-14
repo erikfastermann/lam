@@ -3,41 +3,84 @@ package handler
 import (
 	"context"
 	"crypto/rand"
-	"database/sql"
 	"encoding/base64"
-	"errors"
 	"fmt"
 	"net/http"
 
 	"github.com/erikfastermann/httpwrap"
-	"github.com/erikfastermann/lam/db"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (h *Handler) checkAuth(ctx context.Context, r *http.Request) (*db.User, bool, error) {
-	c, err := r.Cookie("session_token")
-	if err != nil {
-		return nil, false, fmt.Errorf("auth: failed reading cookie, %v", err)
-	}
+const sessToken = "session_token"
 
-	token := c.Value
-	user, err := h.DB.UserByToken(ctx, token)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, false, fmt.Errorf("auth: token %s not found in database", token)
-		}
-		return nil, true, err
+func unauthf(format string, a ...interface{}) error {
+	return httpwrap.Error{
+		StatusCode: http.StatusUnauthorized,
+		Err:        fmt.Errorf(format, a...),
 	}
-	return user, false, nil
 }
 
-func (h *Handler) login(ctx context.Context, user *db.User, w http.ResponseWriter, r *http.Request) error {
-	errUnauthorized := httpwrap.Error{
-		StatusCode: http.StatusUnauthorized,
-		Err:        errors.New("unauthorized"),
+func (h *Handler) findUsername(username string) (*User, bool) {
+	for _, u := range h.Users {
+		if u.Username != username {
+			continue
+		}
+		return u, true
+	}
+	return nil, false
+}
+
+func (h *Handler) findUser(token string) (*User, bool) {
+	for _, u := range h.Users {
+		if u.Token != token {
+			continue
+		}
+		return u, true
+	}
+	return nil, false
+}
+
+func (h *Handler) signIn(username, password string) (token string, err error) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	u, ok := h.findUsername(username)
+	if !ok {
+		return "", unauthf("username %q doesn't exist", username)
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)); err != nil {
+		return "", unauthf("username: %q, %v", username, err)
 	}
 
-	if user != nil {
+	b := make([]byte, 64)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	u.Token = base64.URLEncoding.EncodeToString(b)
+
+	return u.Token, nil
+}
+
+func (h *Handler) checkAuth(r *http.Request) (string, error) {
+	c, err := r.Cookie(sessToken)
+	if err != nil {
+		return "", err
+	}
+
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	token := c.Value
+	u, ok := h.findUser(token)
+	if !ok {
+		return "", fmt.Errorf("token %q doesn't exist", token)
+	}
+
+	return u.Username, nil
+}
+
+func (h *Handler) login(ctx context.Context, username string, w http.ResponseWriter, r *http.Request) error {
+	if username != "" {
 		http.Redirect(w, r, routeOverview, http.StatusSeeOther)
 		return nil
 	}
@@ -46,54 +89,38 @@ func (h *Handler) login(ctx context.Context, user *db.User, w http.ResponseWrite
 		if err := h.Templates.ExecuteTemplate(w, templateLogin, nil); err != nil {
 			return err
 		}
-		return errUnauthorized
+		return unauthf("unauthorized")
 	}
 
-	username := r.FormValue("username")
-	passwordHash := r.FormValue("password")
-	user, err := h.DB.User(ctx, username)
+	token, err := h.signIn(r.FormValue("username"), r.FormValue("password"))
 	if err != nil {
 		http.Redirect(w, r, routeLogin, http.StatusSeeOther)
-		errUnauthorized.Err = fmt.Errorf("couldn't find user (username: %s) in database, %v", username, err)
-		return errUnauthorized
-	}
-
-	byteHash := []byte(passwordHash)
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), byteHash)
-	if err != nil {
-		http.Redirect(w, r, routeLogin, http.StatusSeeOther)
-		errUnauthorized.Err = fmt.Errorf("username: %s, %v", username, err)
-		return errUnauthorized
-	}
-
-	randBytes := make([]byte, 24)
-	_, err = rand.Read(randBytes)
-	if err != nil {
-		return fmt.Errorf("failed generating random bytes, %v", err)
-	}
-	token := base64.URLEncoding.EncodeToString(randBytes)
-	err = h.DB.EditToken(ctx, user.ID, token)
-	if err != nil {
-		return fmt.Errorf("couldn't edit token for username: %s, %v", username, err)
+		return err
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:     "session_token",
+		Name:     sessToken,
 		Value:    token,
 		Path:     "/",
 		Secure:   r.URL.Scheme == "https",
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
 	})
+
 	http.Redirect(w, r, routeOverview, http.StatusSeeOther)
 	return nil
 }
 
-func (h *Handler) logout(ctx context.Context, user *db.User, w http.ResponseWriter, r *http.Request) error {
-	err := h.DB.EditToken(ctx, user.ID, "")
-	if err != nil {
-		return fmt.Errorf("couldn't reset token for username: %s, %v", user.Username, err)
+func (h *Handler) logout(ctx context.Context, username string, w http.ResponseWriter, r *http.Request) error {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
+	u, ok := h.findUsername(username)
+	if !ok {
+		return fmt.Errorf("logout: username %q not found", username)
 	}
+	u.Token = ""
+
 	http.Redirect(w, r, routeLogin, http.StatusSeeOther)
 	return nil
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/erikfastermann/lam/db"
 )
 
-func (h *Handler) overview(ctx context.Context, user *db.User, w http.ResponseWriter, r *http.Request) error {
+func (h *Handler) overview(ctx context.Context, username string, w http.ResponseWriter, r *http.Request) error {
 	type account struct {
 		Color  string
 		Banned bool
@@ -42,6 +42,6 @@ func (h *Handler) overview(ctx context.Context, user *db.User, w http.ResponseWr
 		accs = append(accs, account{color, banned, LeagueOfGraphsURL(acc.Region, acc.IGN), *acc})
 	}
 
-	data := overviewPage{Username: user.Username, Accounts: accs}
+	data := overviewPage{Username: username, Accounts: accs}
 	return h.Templates.ExecuteTemplate(w, templateOverview, data)
 }

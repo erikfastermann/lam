@@ -18,12 +18,6 @@ const (
 	stmtRemoveAccount
 	stmtEditAccount
 	stmtEditElo
-	stmtUser
-	stmtUsernames
-	stmtUserByToken
-	stmtAddUser
-	stmtRemoveUser
-	stmtEditToken
 )
 
 type DB struct {
@@ -41,14 +35,6 @@ func Init(ctx context.Context, path string) (db.DB, error) {
 		return nil, err
 	}
 
-	_, err = sqlDB.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS users (
-		username VARCHAR(24) NOT NULL UNIQUE,
-		password VARCHAR(63) NOT NULL,
-		token VARCHAR(60) NOT NULL
-	)`)
-	if err != nil {
-		return nil, err
-	}
 	_, err = sqlDB.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS accounts (
 		region varchar(4) NOT NULL,
 		tag varchar(24) NOT NULL,
@@ -87,12 +73,6 @@ func Init(ctx context.Context, path string) (db.DB, error) {
 			leaverbuster=?, ban=?, perma=?, password_changed=?, pre_30=?
 			WHERE _rowid_=?`},
 		{stmtEditElo, `UPDATE accounts SET elo=? WHERE _rowid_=?`},
-		{stmtUser, `SELECT _rowid_, username, password, token FROM users WHERE username=?`},
-		{stmtUsernames, `SELECT username FROM users`},
-		{stmtUserByToken, `SELECT _rowid_, username, password, token FROM users WHERE token=?`},
-		{stmtAddUser, `INSERT INTO users(username, password, token) VALUES(?, ?, '')`},
-		{stmtRemoveUser, `DELETE FROM users WHERE username=?`},
-		{stmtEditToken, `UPDATE users SET token=? WHERE _rowid_=?`},
 	}
 
 	stmts := make(map[stmtQuery]*sql.Stmt)

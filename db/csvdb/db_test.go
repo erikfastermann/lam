@@ -2,12 +2,10 @@ package csvdb
 
 import (
 	"context"
-	"database/sql"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
-	"strconv"
 	"testing"
 
 	"github.com/erikfastermann/lam/db"
@@ -27,64 +25,11 @@ func TestDB(t *testing.T) {
 	path := func(path string) string {
 		return filepath.Join(dir, path)
 	}
-	d, err := Init(path("users.csv"), path("accs.csv"), path("ctr.csv"))
+	d, err := Init(path("accs.csv"), path("ctr.csv"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer d.Close()
-
-	for i := 0; i < 3; i++ {
-		s := strconv.Itoa(i)
-		username := "user" + s
-		pass := "pass" + s
-		if err := d.AddUser(ctx, username, pass); err != nil {
-			t.Fatal(err)
-		}
-		u, err := d.User(ctx, username)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if u.ID != i {
-			t.Fatalf("id %d != %d", u.ID, i)
-		}
-		if u.Username != username {
-			t.Fatalf("username %s != %s", u.Username, username)
-		}
-		if u.Password != pass {
-			t.Fatalf("password %s != %s", u.Password, pass)
-		}
-		if u.Token != "" {
-			t.Fatalf("token not empty, got %s", u.Token)
-		}
-	}
-
-	names, err := d.Usernames(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if l := len(names); l != 3 {
-		t.Fatalf("expected 3 usernames, got %d %q", l, names)
-	}
-	for i, n := range names {
-		if name := "user" + strconv.Itoa(i); n != name {
-			t.Fatalf("expected name %s, got %s", name, n)
-		}
-	}
-
-	tok := "wjrhgfkiawjldhiajk\njsegkdh"
-	if err := d.EditToken(ctx, 1, tok); err != nil {
-		t.Fatal(err)
-	}
-	if u, err := d.UserByToken(ctx, tok); err != nil || u.Token != tok {
-		t.Fatalf("expected token %s, got %s (err: %v)", tok, u.Token, err)
-	}
-
-	if err := d.RemoveUser(ctx, "user1"); err != nil {
-		t.Fatal(err)
-	}
-	if u, err := d.User(ctx, "user1"); err != sql.ErrNoRows {
-		t.Fatalf("found deleted user: %+v (err: %v)", u, err)
-	}
 
 	if _, err := d.Accounts(ctx); err != nil {
 		t.Fatal(err)

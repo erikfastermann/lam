@@ -18,20 +18,6 @@ After installing Docker and Docker-compose, run:
 sudo docker-compose up -d
 ```
 
-# Add a User
-
-Add a user with the manage.go script by running:
-
-```
-cd $GOPATH/src/github.com/erikfastermann/lam/manage
-go get
-go run manage.go -a $LAM_DB_PATH
-```
-
-If you don't supply a path, the default for this docker volume will be used.
-
-You might need sudo for this to work.
-
 # HTTPS
 
 To activate HTTPS, comment out and adjust the following in the docker-compose.yml file:
@@ -56,6 +42,8 @@ Redirecting to HTTPS will not work otherwise.
 Address (e.g.: ':80'): `LAM_ADDRESS`
 
 Template Glob (e.g.: 'template/*'): `LAM_TEMPLATE_GLOB`
+
+Users (e.g.: 'user1:bcrypt1:user2:bcrypt2'): `LAM_USERS`
 
 Sqlite3 DB Path (e.g.: '/lam.db'): `LAM_DB_PATH`
 

@@ -95,7 +95,7 @@ func (d *DB) Accounts(ctx context.Context) ([]*db.Account, error) {
 }
 
 func (d *DB) AddAccount(ctx context.Context, acc *db.Account) error {
-	id, err := bumpCtr(ctx, d.ctr, ctrPosAcc)
+	id, err := bumpCtr(ctx, d.ctr)
 	if err != nil {
 		return err
 	}

@@ -21,8 +21,8 @@ import (
 
 type Config struct {
 	DBPath string
+	Users  []*handler.User
 
-	CSVDBUsers    string
 	CSVDBAccounts string
 	CSVDBCtr      string
 
@@ -57,8 +57,22 @@ func ConfigFromEnv(prefix string) (Config, error) {
 		return Config{}, err
 	}
 
+	var users string
+	if err := getenv(prefix, entry{"USERS", &users}); err != nil {
+		return Config{}, err
+	}
+	split := strings.Split(users, ":")
+	if len(split)%2 != 0 {
+		return Config{}, fmt.Errorf("not every user has a password set")
+	}
+	for i := 0; i < len(split); i += 2 {
+		config.Users = append(config.Users, &handler.User{
+			Username: split[i],
+			Password: split[i+1],
+		})
+	}
+
 	err = getenv(prefix,
-		entry{"CSVDB_USERS", &config.CSVDBUsers},
 		entry{"CSVDB_ACCOUNTS", &config.CSVDBAccounts},
 		entry{"CSVDB_CTR", &config.CSVDBCtr},
 	)
@@ -117,13 +131,15 @@ func parseCertKeys(certKeys string) ([]CertKey, error) {
 }
 
 func ListenAndServe(ctx context.Context, config Config, logger *log.Logger) error {
-	h := new(handler.Handler)
+	h := &handler.Handler{
+		Users: config.Users,
+	}
 
 	var err error
 	if config.DBPath != "" {
 		h.DB, err = sqlite3.Init(ctx, config.DBPath)
 	} else {
-		h.DB, err = csvdb.Init(config.CSVDBUsers, config.CSVDBAccounts, config.CSVDBCtr)
+		h.DB, err = csvdb.Init(config.CSVDBAccounts, config.CSVDBCtr)
 	}
 	if err != nil {
 		return err

@@ -31,6 +31,10 @@ const (
 	templateEdit     = "edit.html"
 )
 
+type User struct {
+	Username, Password, Token string
+}
+
 var errBadMethod = httpwrap.Error{
 	StatusCode: http.StatusMethodNotAllowed,
 	Err:        errors.New("bad method"),
@@ -42,11 +46,16 @@ type route struct {
 	hf      handlerFunc
 }
 
-type handlerFunc func(context.Context, *db.User, http.ResponseWriter, *http.Request) error
+type handlerFunc func(ctx context.Context, username string, w http.ResponseWriter, r *http.Request) error
 
 type Handler struct {
-	DB              db.DB
-	Templates       *template.Template
+	DB db.DB
+
+	mu    sync.RWMutex
+	Users []*User
+
+	Templates *template.Template
+
 	once            sync.Once
 	logger          *log.Logger
 	protectedRoutes map[string]route
@@ -74,17 +83,15 @@ func (h *Handler) serve(w http.ResponseWriter, r *http.Request) error {
 		header.Add("Strict-Transport-Security", "max-age=63072000; includeSubDomains")
 	}
 
-	user, isFatal, err := h.checkAuth(ctx, r)
+	username, err := h.checkAuth(r)
 	if path.Clean(r.URL.Path) == routeLogin {
 		if r.Method != http.MethodGet && r.Method != http.MethodPost {
 			return errBadMethod
 		}
-		return h.login(ctx, user, w, r)
+		return h.login(ctx, username, w, r)
 	}
 	if err != nil {
-		if !isFatal {
-			http.Redirect(w, r, routeLogin, http.StatusSeeOther)
-		}
+		http.Redirect(w, r, routeLogin, http.StatusSeeOther)
 		return err
 	}
 
@@ -92,7 +99,7 @@ func (h *Handler) serve(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	return fn(ctx, user, w, r)
+	return fn(ctx, username, w, r)
 }
 
 func (h *Handler) router(r *http.Request) (handlerFunc, error) {
@@ -144,6 +151,16 @@ func (h *Handler) setup() {
 			h.remove,
 		},
 	}
+}
+
+func (h *Handler) usernames() []string {
+	usernames := make([]string, 0)
+	h.mu.RLock()
+	for _, u := range h.Users {
+		usernames = append(usernames, u.Username)
+	}
+	h.mu.RUnlock()
+	return usernames
 }
 
 func splitURL(url string) (string, string) {

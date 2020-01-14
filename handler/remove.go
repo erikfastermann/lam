@@ -8,10 +8,9 @@ import (
 	"strconv"
 
 	"github.com/erikfastermann/httpwrap"
-	"github.com/erikfastermann/lam/db"
 )
 
-func (h *Handler) remove(ctx context.Context, user *db.User, w http.ResponseWriter, r *http.Request) error {
+func (h *Handler) remove(ctx context.Context, _ string, w http.ResponseWriter, r *http.Request) error {
 	id, err := strconv.Atoi(r.URL.Path[1:])
 	if err != nil {
 		return httpwrap.Error{

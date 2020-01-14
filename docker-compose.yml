@@ -5,6 +5,7 @@ services:
                         context: .
                 environment:
                         LAM_ADDRESS: ':80'
+                        LAM_USERS: ''
                         LAM_DB_PATH: /mnt/lam.db
                         # LAM_HTTPS_DOMAIN: 'your-domain.com'
                         # LAM_HTTPS_ADDRESS: ':443'

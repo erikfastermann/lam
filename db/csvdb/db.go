@@ -10,31 +10,24 @@ import (
 )
 
 type DB struct {
-	accs  *table
-	users *table
-	ctr   *table
+	accs *table
+	ctr  *table
 }
 
-func Init(users, accounts, ctr string) (*DB, error) {
+func Init(accounts, ctr string) (*DB, error) {
 	d := &DB{
-		accs:  new(table),
-		users: new(table),
-		ctr:   new(table),
+		accs: new(table),
+		ctr:  new(table),
 	}
 	open := func(path string) (*os.File, error) {
 		return os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_SYNC, 0644)
 	}
 
 	var err error
-	if d.users.File, err = open(users); err != nil {
-		return nil, err
-	}
 	if d.accs.File, err = open(accounts); err != nil {
-		d.users.Close()
 		return nil, err
 	}
 	if d.ctr.File, err = open(ctr); err != nil {
-		d.users.Close()
 		d.accs.Close()
 		return nil, err
 	}
@@ -45,14 +38,13 @@ func Init(users, accounts, ctr string) (*DB, error) {
 			return err
 		}
 		if fi.Size() == 0 {
-			if _, err := fmt.Fprint(d.ctr, "0,0"); err != nil {
+			if _, err := fmt.Fprint(d.ctr, "0"); err != nil {
 				return err
 			}
 		}
 		return nil
 	}()
 	if err != nil {
-		d.users.Close()
 		d.accs.Close()
 		d.ctr.Close()
 		return nil, err
@@ -63,7 +55,7 @@ func Init(users, accounts, ctr string) (*DB, error) {
 
 func (d *DB) Close() error {
 	var err error
-	for _, c := range []io.Closer{d.users, d.accs, d.ctr} {
+	for _, c := range []io.Closer{d.accs, d.ctr} {
 		if innerErr := c.Close(); innerErr != nil {
 			err = innerErr
 		}
@@ -133,31 +125,15 @@ func (t *table) insert(ctx context.Context, record []string) error {
 	})
 }
 
-const (
-	ctrPosUser = 0
-	ctrPosAcc  = 1
-)
-
-func bumpCtr(ctx context.Context, t *table, ctrPos uint) (int, error) {
-	var id1, id2 int
-	bump1, bump2 := 0, 0
-	switch ctrPos {
-	case 0:
-		bump1 = 1
-	case 1:
-		bump2 = 1
-	default:
-		panic("invalid counter")
-	}
-
-	err := withCtx(ctx, func() error {
+func bumpCtr(ctx context.Context, t *table) (id int, err error) {
+	err = withCtx(ctx, func() error {
 		t.Lock()
 		defer t.Unlock()
 
 		if _, err := t.Seek(0, io.SeekStart); err != nil {
 			return err
 		}
-		if _, err := fmt.Fscanf(t, "%d,%d", &id1, &id2); err != nil {
+		if _, err := fmt.Fscanf(t, "%d", &id); err != nil {
 			return err
 		}
 
@@ -167,17 +143,14 @@ func bumpCtr(ctx context.Context, t *table, ctrPos uint) (int, error) {
 		if _, err := t.Seek(0, io.SeekStart); err != nil {
 			return err
 		}
-		_, err := fmt.Fprintf(t, "%d,%d", id1+bump1, id2+bump2)
+		_, err := fmt.Fprintf(t, "%d", id+1)
 		return err
 	})
 
 	if err != nil {
 		return -1, err
 	}
-	if bump1 > 0 {
-		return id1, nil
-	}
-	return id2, nil
+	return id, nil
 }
 
 func withCtx(ctx context.Context, f func() error) error {

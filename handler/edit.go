@@ -8,10 +8,9 @@ import (
 	"strconv"
 
 	"github.com/erikfastermann/httpwrap"
-	"github.com/erikfastermann/lam/db"
 )
 
-func (h *Handler) edit(ctx context.Context, user *db.User, w http.ResponseWriter, r *http.Request) error {
+func (h *Handler) edit(ctx context.Context, username string, w http.ResponseWriter, r *http.Request) error {
 	id, err := strconv.Atoi(r.URL.Path[1:])
 	if err != nil {
 		return httpwrap.Error{
@@ -28,12 +27,9 @@ func (h *Handler) edit(ctx context.Context, user *db.User, w http.ResponseWriter
 				Err:        fmt.Errorf("couldn't get account with id %d from database, %v", id, err),
 			}
 		}
-		usernames, err := h.DB.Usernames(ctx)
-		if err != nil {
-			return fmt.Errorf("couldn't query usernames from database, %v", err)
-		}
+
 		title := fmt.Sprintf("Edit: %s", strconv.Quote(acc.IGN))
-		data := editPage{Title: title, Users: usernames, Username: user.Username, Account: *acc}
+		data := editPage{Title: title, Users: h.usernames(), Username: username, Account: *acc}
 		return h.Templates.ExecuteTemplate(w, templateEdit, data)
 	}
 
