@@ -5,13 +5,13 @@ services:
                         context: .
                 environment:
                         LAM_ADDRESS: ':80'
-                        LAM_USERS: ''
-                        LAM_ACCOUNTS: /mnt/accounts.csv
-                        LAM_CTR: /mnt/ctr.csv
-                        # LAM_HTTPS_DOMAIN: 'your-domain.com'
-                        # LAM_HTTPS_ADDRESS: ':443'
-                        # LAM_HTTPS_CERTS: '/var/lam/keypairs/cert-file1,/var/lam/keypairs/cert-file2'
-                        # LAM_HTTPS_KEYS: '/var/lam/keypairs/key-file1,/var/lam/keypairs/key-file2'
+                        LAM_HTTPS_ADDRESS: ':443'
+                        LAM_DOMAIN: 'https://your-domain.com:443'
+                        LAM_CERT: '/var/lam/keypairs/server.crt'
+                        LAM_KEY: '/var/lam/keypairs/server.key'
+                        LAM_USERS: 'user1:bcrypt1'
+                        LAM_ACCOUNTS: '/mnt/accounts.csv'
+                        LAM_CTR: '/mnt/ctr.csv'
                 container_name: lam
                 ports:
                         - "80:80"
@@ -19,6 +19,6 @@ services:
                 restart: on-failure
                 volumes:
                         - db:/mnt
-                        # - path/to/keypairs:/var/lam/keypairs
+                        - path/to/keypairs:/var/lam/keypairs
 volumes:
         db:

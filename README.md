@@ -12,36 +12,23 @@ go get github.com/erikfastermann/lam
 
 # Docker
 
-After installing Docker and Docker-compose, run:
+After installing docker and docker-compose, run:
 
 ```
 sudo docker-compose up -d
 ```
 
-# HTTPS
+# List of environment variables
 
-To activate HTTPS, comment out and adjust the following in the docker-compose.yml file:
+Address (used for redirecting, e.g.: ':80'): `LAM_ADDRESS`
 
-```yaml
-- path/to/keypairs:/var/lam/keypairs
-```
+HTTPS Address: `LAM_HTTPS_ADDRESS`
 
-```yaml
-LAM_HTTPS_DOMAIN: 'https://your-domain.com'
-LAM_HTTPS_ADDRESS: ':443'
-LAM_HTTPS_CERT_KEYS: '/var/lam/keypairs/cert-file:/var/lam/keypairs/key-file'
-```
+Domain (used to upgrade from HTTP to HTTPS): `LAM_DOMAIN`
 
-NOTE: Don't use different ports for inside and outside the container.
-Redirecting to HTTPS will not work otherwise.
+Cert file: `LAM_CERT`
 
-# Appendix
-
-## List of environment variables
-
-Address (e.g.: ':80'): `LAM_ADDRESS`
-
-Template Glob (e.g.: 'template/*'): `LAM_TEMPLATE_GLOB`
+Key file: `LAM_KEY`
 
 Users (e.g.: 'user1:bcrypt1:user2:bcrypt2'): `LAM_USERS`
 
@@ -49,10 +36,4 @@ CSV DB Accounts (e.g.: '/accounts.csv'): `LAM_ACCOUNTS`
 
 CSV DB Counter (e.g.: '/ctr.csv'): `LAM_CTR`
 
-### HTTPS
-
-Address (set to activate): `LAM_HTTPS_ADDRESS`
-
-Cert and Key files (eg.: './cert-file1:./key-file1,./cert-file2:./key-file2'): `LAM_HTTPS_CERT_KEYS`
-
-Domain (used to upgrade from HTTP to HTTPS): `LAM_HTTPS_DOMAIN`
+Template Glob (e.g.: 'template/*'): `LAM_TEMPLATE_GLOB`
