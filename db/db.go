@@ -14,7 +14,7 @@ type NullTime struct {
 }
 
 type DB struct {
-	sync.Mutex
+	sync.RWMutex
 	*os.File
 	ctr int
 }
@@ -44,8 +44,8 @@ func Init(accounts string) (*DB, error) {
 }
 
 func (d *DB) all() ([][]string, error) {
-	d.Lock()
-	defer d.Unlock()
+	d.RLock()
+	defer d.RUnlock()
 	return d.allUnsync()
 }
 
