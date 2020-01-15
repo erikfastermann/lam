@@ -10,7 +10,7 @@ services:
                         LAM_CERT: '/var/lam/keypairs/server.crt'
                         LAM_KEY: '/var/lam/keypairs/server.key'
                         LAM_USERS: 'user1:bcrypt1'
-                        LAM_ACCOUNTS: '/mnt/accounts.csv'
+                        LAM_DB_DIR: '/mnt'
                 container_name: lam
                 ports:
                         - "80:80"

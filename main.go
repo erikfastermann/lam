@@ -28,7 +28,7 @@ func run() error {
 	}
 
 	var addr, https, domain, cert, key string
-	var users, accs string
+	var users, dbDir string
 	var tmplt string
 	for _, e := range []entry{
 		{"ADDRESS", &addr},
@@ -38,7 +38,7 @@ func run() error {
 		{"KEY", &key},
 
 		{"USERS", &users},
-		{"ACCOUNTS", &accs},
+		{"DB_DIR", &dbDir},
 
 		{"TEMPLATE_GLOB", &tmplt},
 	} {
@@ -66,7 +66,7 @@ func run() error {
 	}
 
 	var err error
-	h.DB, err = db.Init(accs)
+	h.DB, err = db.Init(dbDir)
 	if err != nil {
 		return err
 	}

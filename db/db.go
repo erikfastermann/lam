@@ -3,7 +3,9 @@ package db
 import (
 	"encoding/csv"
 	"io"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 )
@@ -14,17 +16,18 @@ type NullTime struct {
 }
 
 type DB struct {
+	dir string
 	sync.RWMutex
 	*os.File
 	ctr int
 }
 
-func Init(accounts string) (*DB, error) {
-	d := new(DB)
+const accFile = "accounts.csv"
 
-	var err error
-	d.File, err = os.OpenFile(accounts, os.O_RDWR|os.O_CREATE|os.O_SYNC, 0644)
-	if err != nil {
+func Init(dir string) (*DB, error) {
+	d := &DB{dir: dir}
+
+	if err := d.open(); err != nil {
 		return nil, err
 	}
 
@@ -41,6 +44,19 @@ func Init(accounts string) (*DB, error) {
 	d.ctr++
 
 	return d, nil
+}
+
+func (d *DB) open() error {
+	f, err := os.OpenFile(
+		filepath.Join(d.dir, accFile),
+		os.O_RDWR|os.O_CREATE|os.O_SYNC,
+		0644,
+	)
+	if err != nil {
+		return err
+	}
+	d.File = f
+	return nil
 }
 
 func (d *DB) all() ([][]string, error) {
@@ -69,11 +85,22 @@ func (d *DB) update(f func([][]string) ([][]string, error)) error {
 		return err
 	}
 
-	if err := d.Truncate(0); err != nil {
+	tmp, err := ioutil.TempFile(d.dir, accFile)
+	if err != nil {
 		return err
 	}
-	if _, err := d.Seek(0, io.SeekStart); err != nil {
+	name := tmp.Name()
+
+	wErr := csv.NewWriter(tmp).WriteAll(records)
+	if err := tmp.Close(); err != nil {
 		return err
 	}
-	return csv.NewWriter(d).WriteAll(records)
+	if wErr != nil {
+		return err
+	}
+
+	if err := os.Rename(name, filepath.Join(d.dir, accFile)); err != nil {
+		return err
+	}
+	return d.open()
 }

@@ -3,20 +3,18 @@ package db
 import (
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"reflect"
 	"testing"
 )
 
 func TestDB(t *testing.T) {
-	dir, err := ioutil.TempDir(os.TempDir(), "lam-test")
+	dir, err := ioutil.TempDir("", "lam-test")
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(dir)
 
-	// d, err := Init("accs.csv")
-	d, err := Init(filepath.Join(dir, "accs.csv"))
+	d, err := Init(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
